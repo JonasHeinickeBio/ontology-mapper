@@ -1,0 +1,7 @@
+# Core dependencies for ontology mapping tool
+rdflib>=6.0.0
+requests>=2.25.0
+typing-extensions>=4.0.0
+
+# GUI dependencies (optional)
+tkinter>=8.6.0  # Usually included with Python

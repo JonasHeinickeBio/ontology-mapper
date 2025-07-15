@@ -1,0 +1,10 @@
+breast cancer
+diabetes mellitus
+hypertension
+asthma
+pneumonia
+tuberculosis
+covid-19
+influenza
+malaria
+cancer

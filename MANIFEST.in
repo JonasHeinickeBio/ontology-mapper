@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include requirements.txt
+include .env.template
+recursive-include config *.py
+recursive-include examples *.py *.txt *.ttl
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.log
