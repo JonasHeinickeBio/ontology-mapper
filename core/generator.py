@@ -5,7 +5,6 @@ Ontology generation utilities.
 import json
 import os
 from datetime import datetime
-from typing import Dict, Optional
 
 from rdflib import OWL, RDF, RDFS, SKOS, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS
@@ -21,9 +20,9 @@ class OntologyGenerator:
     def generate_improved_ontology(
         self,
         ontology: OntologyParser,
-        selections: Dict,
+        selections: dict,
         output_file: str,
-        report_file: Optional[str] = None,
+        report_file: str | None = None,
     ):
         """Generate improved ontology with selected alignments"""
         print("\n💾 Generating Improved Ontology")
@@ -240,7 +239,7 @@ class OntologyGenerator:
             print(f"  File size: {size:,} bytes")
 
     def generate_single_word_ontology(
-        self, concept: Dict, selections: Dict, output_file: str, report_file: Optional[str] = None
+        self, concept: dict, selections: dict, output_file: str, report_file: str | None = None
     ):
         """Generate ontology for single word query"""
         print("\n💾 Generating Ontology for Single Word Query")

@@ -4,7 +4,6 @@ Loading bar utilities for long-running operations.
 
 import threading
 import time
-from typing import Optional
 
 
 class LoadingBar:
@@ -14,7 +13,7 @@ class LoadingBar:
         self.message = message
         self.style = style
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.styles = {
             "dots": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
             "spinner": ["|", "/", "-", "\\"],

@@ -2,7 +2,7 @@
 Comparison and ranking service for ontology results.
 """
 
-from typing import Any, Dict, List, Set
+from typing import Any
 
 
 class ResultComparator:
@@ -10,10 +10,10 @@ class ResultComparator:
 
     @staticmethod
     def compare_results(
-        bp_results: List[Dict], ols_results: List[Dict], concept: str
-    ) -> Dict[str, Any]:
+        bp_results: list[dict], ols_results: list[dict], concept: str
+    ) -> dict[str, Any]:
         """Compare BioPortal and OLS results and identify discrepancies"""
-        comparison: Dict[str, Any] = {
+        comparison: dict[str, Any] = {
             "concept": concept,
             "bioportal_count": len(bp_results),
             "ols_count": len(ols_results),
@@ -28,7 +28,7 @@ class ResultComparator:
         ols_labels = {result["label"].lower(): result for result in ols_results}
 
         # Find common terms
-        common_labels: Set[str] = set(bp_labels.keys()) & set(ols_labels.keys())
+        common_labels: set[str] = set(bp_labels.keys()) & set(ols_labels.keys())
         for label in common_labels:
             bp_result = bp_labels[label]
             ols_result = ols_labels[label]
@@ -44,12 +44,12 @@ class ResultComparator:
             comparison["common_terms"].append(common_term)
 
         # Find BioPortal-only terms
-        bp_only_labels: Set[str] = set(bp_labels.keys()) - set(ols_labels.keys())
+        bp_only_labels: set[str] = set(bp_labels.keys()) - set(ols_labels.keys())
         for label in bp_only_labels:
             comparison["bioportal_only"].append(bp_labels[label])
 
         # Find OLS-only terms
-        ols_only_labels: Set[str] = set(ols_labels.keys()) - set(bp_labels.keys())
+        ols_only_labels: set[str] = set(ols_labels.keys()) - set(bp_labels.keys())
         for label in ols_only_labels:
             comparison["ols_only"].append(ols_labels[label])
 

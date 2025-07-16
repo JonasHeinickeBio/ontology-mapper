@@ -3,7 +3,6 @@ BioPortal API client for ontology lookups.
 """
 
 import os
-from typing import Dict, List, Optional, Union
 
 import requests
 
@@ -13,11 +12,11 @@ from utils.loading import LoadingBar
 class BioPortalLookup:
     """Handles BioPortal API interactions"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.getenv("BIOPORTAL_API_KEY")
         self.base_url = "https://data.bioontology.org/search"
 
-    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
+    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> list[dict]:
         """Search BioPortal for concepts with enhanced metadata"""
         if not self.api_key or self.api_key == "your_api_key_here":
             # Demo mode
@@ -32,7 +31,7 @@ class BioPortalLookup:
                 }
             ]
 
-        params: Dict[str, Union[str, int]] = {
+        params: dict[str, str | int] = {
             "q": query,
             "apikey": self.api_key,
             "pagesize": max_results,

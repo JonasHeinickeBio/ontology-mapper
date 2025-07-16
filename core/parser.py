@@ -2,8 +2,6 @@
 Ontology parser for TTL files.
 """
 
-from typing import Dict, List
-
 from rdflib import RDF, RDFS, Graph
 
 
@@ -13,8 +11,8 @@ class OntologyParser:
     def __init__(self, ttl_file: str):
         self.ttl_file = ttl_file
         self.graph = Graph()
-        self.classes: List[str] = []
-        self.instances: List[Dict] = []
+        self.classes: list[str] = []
+        self.instances: list[dict] = []
 
     def parse(self) -> bool:
         """Parse the TTL file and extract concepts"""
@@ -51,7 +49,7 @@ class OntologyParser:
             print(f"❌ Error parsing {self.ttl_file}: {e}")
             return False
 
-    def get_priority_concepts(self) -> List[Dict]:
+    def get_priority_concepts(self) -> list[dict]:
         """Get priority concepts for BioPortal lookup"""
         concepts = []
 

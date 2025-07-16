@@ -2,8 +2,6 @@
 OLS API client for ontology lookups.
 """
 
-from typing import Dict, List, Union
-
 import requests
 
 from config import BIOPORTAL_TO_OLS_MAPPING
@@ -16,9 +14,9 @@ class OLSLookup:
     def __init__(self):
         self.base_url = "https://www.ebi.ac.uk/ols/api/search"
 
-    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
+    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> list[dict]:
         """Search OLS for concepts with enhanced metadata"""
-        params: Dict[str, Union[str, int]] = {"q": query, "rows": max_results, "format": "json"}
+        params: dict[str, str | int] = {"q": query, "rows": max_results, "format": "json"}
 
         # Convert BioPortal ontology names to OLS format where possible
         if ontologies:

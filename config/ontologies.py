@@ -2,10 +2,10 @@
 Ontology configuration constants and mappings.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 # Ontology descriptions and configurations
-ONTOLOGY_CONFIGS: Dict[str, str] = {
+ONTOLOGY_CONFIGS: dict[str, str] = {
     "MONDO": "Monarch Disease Ontology - Human diseases and disorders",
     "HP": "Human Phenotype Ontology - Phenotypic abnormalities",
     "NCIT": "NCI Thesaurus - Cancer terminology and biomedical concepts",
@@ -33,7 +33,7 @@ ONTOLOGY_CONFIGS: Dict[str, str] = {
 }
 
 # Common ontology combinations for different research domains
-ONTOLOGY_COMBINATIONS: Dict[str, str] = {
+ONTOLOGY_COMBINATIONS: dict[str, str] = {
     "Disease Research": "MONDO,HP,DOID,NCIT,ORDO",
     "Symptom/Phenotype": "HP,SYMP,NCIT",
     "Chemical/Drug": "CHEBI,RXNORM,NCIT",
@@ -44,7 +44,7 @@ ONTOLOGY_COMBINATIONS: Dict[str, str] = {
 }
 
 # Search strategies for different concept types
-SEARCH_STRATEGIES: Dict[str, Dict[str, Any]] = {
+SEARCH_STRATEGIES: dict[str, dict[str, Any]] = {
     "Disease": {
         "variants": ["disease", "medical condition", "disorder"],
         "ontologies": "MONDO,HP,DOID,NCIT",
@@ -83,7 +83,7 @@ SEARCH_STRATEGIES: Dict[str, Dict[str, Any]] = {
 }
 
 # BioPortal to OLS ontology mapping
-BIOPORTAL_TO_OLS_MAPPING: Dict[str, str] = {
+BIOPORTAL_TO_OLS_MAPPING: dict[str, str] = {
     "MONDO": "mondo",
     "HP": "hp",
     "GO": "go",

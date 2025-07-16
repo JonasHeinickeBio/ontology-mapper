@@ -20,7 +20,7 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- **Python 3.10 or higher** (leverages modern typing features)
 - pip package manager
 
 ### Quick Install

@@ -2,8 +2,6 @@
 Helper functions for ontology mapping operations.
 """
 
-from typing import List, Set
-
 
 def clean_description(description: str) -> str:
     """Clean and normalize description text"""
@@ -41,13 +39,13 @@ def clean_description(description: str) -> str:
     return cleaned
 
 
-def deduplicate_synonyms(synonyms: List[str], existing_labels: Set[str]) -> List[str]:
+def deduplicate_synonyms(synonyms: list[str], existing_labels: set[str]) -> list[str]:
     """Remove duplicate and low-quality synonyms"""
     if not synonyms:
         return []
 
     unique_synonyms = []
-    seen_normalized: Set[str] = set()
+    seen_normalized: set[str] = set()
 
     for synonym in synonyms:
         if not synonym or not synonym.strip():

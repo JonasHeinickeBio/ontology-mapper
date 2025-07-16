@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 from config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
 from core import ConceptLookup, OntologyGenerator, OntologyParser
@@ -325,7 +325,7 @@ Examples:
                 print("\n\n⏹️  Interrupted. Exiting...")
                 sys.exit(0)
 
-    def _load_batch_selections(self, batch_file: str) -> Dict[str, Any]:
+    def _load_batch_selections(self, batch_file: str) -> dict[str, Any]:
         """Load pre-made selections from JSON file"""
         try:
             with open(batch_file) as f:
@@ -335,7 +335,7 @@ Examples:
             print(f"❌ Error loading batch file {batch_file}: {e}")
             return {}
 
-    def _interactive_selection(self, concepts: List[Dict], lookup: ConceptLookup) -> Dict:
+    def _interactive_selection(self, concepts: list[dict], lookup: ConceptLookup) -> dict:
         """Interactive concept selection process with enhanced metadata and comparison"""
         all_selections = {}
         all_comparisons = {}

@@ -1,5 +1,10 @@
 # Installation Guide
 
+## Prerequisites
+
+- **Python 3.10 or higher** (required for modern typing features)
+- Git (for cloning the repository)
+
 ## Quick Start
 
 1. **Clone or download the repository**

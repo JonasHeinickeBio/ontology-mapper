@@ -2,8 +2,6 @@
 Concept lookup orchestration across multiple services.
 """
 
-from typing import Dict, List, Optional, Tuple
-
 from config import SEARCH_STRATEGIES
 from services import BioPortalLookup, OLSLookup, ResultComparator
 
@@ -12,14 +10,14 @@ class ConceptLookup:
     """Handles concept-specific lookups across multiple services"""
 
     def __init__(
-        self, bioportal: BioPortalLookup, ols: OLSLookup, default_ontologies: Optional[str] = None
+        self, bioportal: BioPortalLookup, ols: OLSLookup, default_ontologies: str | None = None
     ):
         self.bioportal = bioportal
         self.ols = ols
         self.default_ontologies = default_ontologies
         self.search_strategies = SEARCH_STRATEGIES
 
-    def lookup_concept(self, concept: Dict, max_results: int = 5) -> Tuple[List[Dict], Dict]:
+    def lookup_concept(self, concept: dict, max_results: int = 5) -> tuple[list[dict], dict]:
         """Perform lookup across both BioPortal and OLS with comparison"""
         key = concept["key"]
         label = concept["label"]
@@ -66,7 +64,7 @@ class ConceptLookup:
 
         return combined_results[: max_results * 2], comparison  # Allow more options
 
-    def _combine_results(self, bp_results: List[Dict], ols_results: List[Dict]) -> List[Dict]:
+    def _combine_results(self, bp_results: list[dict], ols_results: list[dict]) -> list[dict]:
         """Combine results from both services, avoiding duplicates"""
         combined = []
         seen_uris = set()

@@ -21,7 +21,7 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import tkinter as tk
 from rdflib import OWL, RDF, RDFS, SKOS, Graph, Literal, URIRef
@@ -38,13 +38,13 @@ from services.ols import OLSLookup
 class ConceptAlignmentWindow:
     """Window for selecting alignments for a specific concept"""
 
-    def __init__(self, parent, concept: Dict, options: List[Dict], comparison: Dict):
+    def __init__(self, parent, concept: dict, options: list[dict], comparison: dict):
         self.parent = parent
         self.concept = concept
         self.options = options
         self.comparison = comparison
-        self.selections: List[Dict] = []
-        self.result: Optional[List[Dict]] = None
+        self.selections: list[dict] = []
+        self.result: list[dict] | None = None
 
         # Create toplevel window
         self.window = tk.Toplevel(parent)
@@ -119,7 +119,7 @@ class ConceptAlignmentWindow:
         h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Populate tree
-        self.checkboxes: Dict[str, Dict[str, Any]] = {}
+        self.checkboxes: dict[str, dict[str, Any]] = {}
         for _i, option in enumerate(self.options):
             source_icon = "🌐" if option["source"] == "bioportal" else "🔬"
             ols_only = " (OLS-only)" if option.get("ols_only") else ""
@@ -698,7 +698,7 @@ class BioPortalGUI:
         finally:
             self.root.after(0, self.processing_complete)
 
-    def show_single_word_results(self, concept: Dict, options: List[Dict], comparison: Dict):
+    def show_single_word_results(self, concept: dict, options: list[dict], comparison: dict):
         """Show single word query results for selection"""
         self.log(f"✅ Found {len(options)} standardized terms:")
         for j, result in enumerate(options, 1):
@@ -1254,7 +1254,7 @@ CHEBI - Chemical Entities of Biological Interest
         text_widget.insert(tk.END, ontology_list)
         text_widget.config(state=tk.DISABLED)
 
-    def show_concept_alignment_window(self, concept: Dict, options: List[Dict], comparison: Dict):
+    def show_concept_alignment_window(self, concept: dict, options: list[dict], comparison: dict):
         """Show concept alignment window (alias for show_alignment_window)"""
         self.show_alignment_window(concept, options, comparison)
 
@@ -1263,7 +1263,7 @@ CHEBI - Chemical Entities of Biological Interest
         self.update_status("Processing completed successfully")
         self.log("🎉 Processing completed successfully!")
 
-    def _determine_alignment_type(self, alignment: Dict, concept_key: str) -> str:
+    def _determine_alignment_type(self, alignment: dict, concept_key: str) -> str:
         """Determine the type of alignment based on concept and external term characteristics"""
         label_match = alignment.get("label", "").lower()
         concept_label = concept_key.lower().replace("_", " ")
@@ -1333,7 +1333,7 @@ CHEBI - Chemical Entities of Biological Interest
 
         return cleaned
 
-    def _deduplicate_synonyms(self, synonyms: List[str], existing_labels: set) -> List[str]:
+    def _deduplicate_synonyms(self, synonyms: list[str], existing_labels: set) -> list[str]:
         """Remove duplicate and low-quality synonyms"""
         if not synonyms:
             return []

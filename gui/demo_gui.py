@@ -5,8 +5,6 @@ BioPortal GUI Demo
 Standalone demo version that includes embedded CLI functionality.
 """
 
-from typing import Dict, List, Optional
-
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 
@@ -15,10 +13,10 @@ from tkinter import filedialog, scrolledtext, ttk
 class DemoBioPortalLookup:
     """Demo BioPortal lookup with mock data"""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key
 
-    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
+    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> list[dict]:
         """Return demo results"""
         return [
             {
@@ -43,7 +41,7 @@ class DemoBioPortalLookup:
 class DemoOLSLookup:
     """Demo OLS lookup with mock data"""
 
-    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
+    def search(self, query: str, ontologies: str = "", max_results: int = 5) -> list[dict]:
         """Return demo OLS results"""
         return [
             {
@@ -72,7 +70,7 @@ class DemoOntologyParser:
         """Demo parse"""
         return True
 
-    def get_priority_concepts(self) -> List[Dict]:
+    def get_priority_concepts(self) -> list[dict]:
         """Demo priority concepts"""
         concepts = []
         for instance in self.instances:
@@ -98,7 +96,7 @@ class DemoConceptLookup:
         self.bioportal = bioportal
         self.ols = ols
 
-    def lookup_concept(self, concept: Dict):
+    def lookup_concept(self, concept: dict):
         """Demo lookup"""
         bp_results = self.bioportal.search(concept["label"], max_results=2)
         ols_results = self.ols.search(concept["label"], max_results=2)
