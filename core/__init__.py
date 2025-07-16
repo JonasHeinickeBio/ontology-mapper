@@ -2,8 +2,8 @@
 Core module for ontology mapping operations.
 """
 
-from .parser import OntologyParser
-from .lookup import ConceptLookup
 from .generator import OntologyGenerator
+from .lookup import ConceptLookup
+from .parser import OntologyParser
 
-__all__ = ['OntologyParser', 'ConceptLookup', 'OntologyGenerator']
+__all__ = ["OntologyParser", "ConceptLookup", "OntologyGenerator"]

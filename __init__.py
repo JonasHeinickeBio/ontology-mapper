@@ -20,22 +20,22 @@ __version__ = "1.0.0"
 __author__ = "AID-PAIS Research Team"
 
 from .cli import main
-from .core import OntologyParser, ConceptLookup, OntologyGenerator
+from .config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
+from .core import ConceptLookup, OntologyGenerator, OntologyParser
 from .services import BioPortalLookup, OLSLookup, ResultComparator
 from .utils import LoadingBar, clean_description, deduplicate_synonyms
-from .config import ONTOLOGY_CONFIGS, ONTOLOGY_COMBINATIONS
 
 __all__ = [
-    'main',
-    'OntologyParser',
-    'ConceptLookup', 
-    'OntologyGenerator',
-    'BioPortalLookup',
-    'OLSLookup',
-    'ResultComparator',
-    'LoadingBar',
-    'clean_description',
-    'deduplicate_synonyms',
-    'ONTOLOGY_CONFIGS',
-    'ONTOLOGY_COMBINATIONS'
+    "main",
+    "OntologyParser",
+    "ConceptLookup",
+    "OntologyGenerator",
+    "BioPortalLookup",
+    "OLSLookup",
+    "ResultComparator",
+    "LoadingBar",
+    "clean_description",
+    "deduplicate_synonyms",
+    "ONTOLOGY_CONFIGS",
+    "ONTOLOGY_COMBINATIONS",
 ]

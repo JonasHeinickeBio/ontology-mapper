@@ -45,9 +45,43 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Translations
 *.mo
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+.env
+.env.*
+!.env.template
+*.log
+*.tmp
+temp/
+tmp/
+
+# Pre-commit
+.pre-commit-config.yaml.bak
+
+# Ruff
+.ruff_cache/
 *.pot
 
 # Django stuff:
@@ -107,6 +141,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.envrc
 
 # Spyder project settings
 .spyderproject

@@ -28,12 +28,12 @@
    ```
 
 5. **Run the tool**
-   
+
    Command line interface:
    ```bash
    python main.py
    ```
-   
+
    Graphical interface:
    ```bash
    python gui/launch_gui.py

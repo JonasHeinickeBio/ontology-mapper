@@ -19,7 +19,7 @@ A modern graphical user interface for enhancing ontologies using BioPortal and O
    pip install -r requirements.txt
    ```
 
-2. **Ensure CLI Module Access**: 
+2. **Ensure CLI Module Access**:
    The GUI depends on the CLI module in the parent `ontology_mapping` folder.
 
 ## Usage

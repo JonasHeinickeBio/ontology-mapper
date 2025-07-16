@@ -1,0 +1,258 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+# Only keep fields that are not deprecated in modern Poetry
+packages = [
+    { include = "cli" },
+    { include = "core" },
+    { include = "services" },
+    { include = "utils" },
+    { include = "config" },
+    { include = "gui" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8.1"
+rdflib = ">=6.0.0"
+requests = ">=2.25.0"
+typing-extensions = ">=4.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0.0"
+pytest-cov = ">=4.0.0"
+pytest-mock = ">=3.10.0"
+mypy = ">=1.0.0"
+pre-commit = ">=3.0.0"
+ruff = ">=0.0.270"
+bandit = ">=1.7.0"
+safety = ">=2.0.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=7.0.0"
+pytest-cov = ">=4.0.0"
+pytest-mock = ">=3.10.0"
+responses = ">=0.23.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=6.0.0"
+sphinx-rtd-theme = ">=1.2.0"
+myst-parser = ">=0.19.0"
+sphinxcontrib-napoleon = ">=0.7"
+
+[tool.poetry.group.performance.dependencies]
+orjson = ">=3.8.0"
+lxml = ">=4.9.0"
+
+# Modern PEP 621 format - compatible with Poetry and uv
+[project]
+name = "ontology-mapper"
+version = "1.0.0"
+description = "A modular command-line interface for mapping and enriching ontologies using BioPortal and OLS APIs"
+readme = "README.md"
+requires-python = ">=3.8.1"
+license = { text = "MIT" }
+authors = [
+    { name = "Jonas Heinicke", email = "jonas.heinicke@helmholtz-hzi.de" },
+]
+maintainers = [
+    { name = "Jonas Heinicke", email = "jonas.heinicke@helmholtz-hzi.de" },
+]
+keywords = [
+    "ontology",
+    "mapping",
+    "bioportal",
+    "ols",
+    "biomedical",
+    "semantic",
+    "rdf",
+    "ttl",
+    "bioinformatics",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: XML",
+]
+dependencies = ["rdflib>=6.0.0", "requests>=2.25.0", "typing-extensions>=4.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/JonasHeinickeBio/ontology-mapper"
+Repository = "https://github.com/JonasHeinickeBio/ontology-mapper.git"
+Documentation = "https://github.com/JonasHeinickeBio/ontology-mapper#readme"
+Issues = "https://github.com/JonasHeinickeBio/ontology-mapper/issues"
+Changelog = "https://github.com/JonasHeinickeBio/ontology-mapper/releases"
+
+[project.optional-dependencies]
+gui = [
+    # tkinter is typically included with Python
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+    "ruff>=0.0.270",
+    "bandit>=1.7.0",
+    "safety>=2.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "responses>=0.23.0",   # For mocking HTTP requests
+]
+docs = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=0.19.0",
+    "sphinxcontrib-napoleon>=0.7",
+]
+performance = [
+    "orjson>=3.8.0", # Faster JSON processing
+    "lxml>=4.9.0",   # Faster XML processing
+]
+all = []
+
+[project.scripts]
+ontology-mapping = "main:main"
+ontology-gui = "gui.launch_gui:main"
+
+[tool.setuptools]
+packages = ["cli", "core", "services", "utils", "config", "gui"]
+
+[tool.setuptools.package-data]
+config = ["*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=.",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--strict-markers",
+    "--disable-warnings",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "gui: marks tests as GUI tests",
+    "api: marks tests that require API access",
+    "network: marks tests that require network access",
+    "local: marks tests that require local resources",
+    "e2e: marks end-to-end tests",
+    "performance: marks performance tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    "setup.py",
+    "test_install.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "test_*", ".venv", "venv"]
+skips = ["B101", "B601"]           # Skip assert_used and shell_injection_possible
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Too strict for current codebase
+disallow_incomplete_defs = false  # Too strict for current codebase
+check_untyped_defs = true
+disallow_untyped_decorators = false  # Too strict for current codebase
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+namespace_packages = true
+explicit_package_bases = true
+files = ["cli", "core", "services", "utils", "config", "gui", "main.py"]
+
+[[tool.mypy.overrides]]
+module = ["rdflib.*", "requests.*", "tkinter.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501", # line too long, handled by formatter
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["F401", "F811"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cli", "core", "services", "utils", "config", "gui"]
+known-third-party = ["rdflib", "requests", "tkinter"]
+
+# Pre-commit configuration is in .pre-commit-config.yaml

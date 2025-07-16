@@ -4,21 +4,23 @@ Example: Basic concept lookup
 """
 
 import sys
-sys.path.append('..')
 
 from core.lookup import ConceptLookup
+
+sys.path.append("..")
+
 
 def main():
     # Initialize the lookup service
     lookup = ConceptLookup()
-    
+
     # Search for a concept
     concept = "breast cancer"
     print(f"Searching for: {concept}")
-    
+
     # Perform lookup
     results = lookup.search(concept)
-    
+
     # Display results
     if results:
         print(f"\nFound {len(results)} results:")
@@ -29,6 +31,7 @@ def main():
             print()
     else:
         print("No results found")
+
 
 if __name__ == "__main__":
     main()
