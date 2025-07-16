@@ -17,13 +17,46 @@ Modules:
 """
 
 __version__ = "1.0.0"
-__author__ = "AID-PAIS Research Team"
+__author__ = "Jonas Immanuel Heinicke"
 
-from .cli import main
-from .config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
-from .core import ConceptLookup, OntologyGenerator, OntologyParser
-from .services import BioPortalLookup, OLSLookup, ResultComparator
-from .utils import LoadingBar, clean_description, deduplicate_synonyms
+# Import handling for both package and direct execution
+import sys
+from pathlib import Path
+
+# Ensure the current directory is in the Python path
+current_dir = Path(__file__).parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+try:
+    # Try relative imports first (for package usage)
+    from .cli import main
+    from .config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
+    from .core import ConceptLookup, OntologyGenerator, OntologyParser
+    from .services import BioPortalLookup, OLSLookup, ResultComparator
+    from .utils import LoadingBar, clean_description, deduplicate_synonyms
+except ImportError:
+    # Fallback to absolute imports (for script usage)
+    try:
+        from cli import main
+        from config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
+        from core import ConceptLookup, OntologyGenerator, OntologyParser
+        from services import BioPortalLookup, OLSLookup, ResultComparator
+        from utils import LoadingBar, clean_description, deduplicate_synonyms
+    except ImportError as e:
+        print(f"Warning: Could not import some modules: {e}")
+        main = None
+        ONTOLOGY_COMBINATIONS = {}
+        ONTOLOGY_CONFIGS = {}
+        ConceptLookup = None
+        OntologyGenerator = None
+        OntologyParser = None
+        BioPortalLookup = None
+        OLSLookup = None
+        ResultComparator = None
+        LoadingBar = None
+        clean_description = None
+        deduplicate_synonyms = None
 
 __all__ = [
     "main",
