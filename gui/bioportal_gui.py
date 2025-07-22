@@ -28,11 +28,13 @@ from rdflib import OWL, RDF, RDFS, SKOS, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-# Import the core classes from the CLI tool
+from config.logging_config import get_logger
 from core.lookup import ConceptLookup
 from core.parser import OntologyParser
 from services.bioportal import BioPortalLookup
 from services.ols import OLSLookup
+
+logger = get_logger(__name__)
 
 
 class ConceptAlignmentWindow:
@@ -1380,7 +1382,7 @@ def main():
         app = BioPortalGUI()
         app.run()
     except KeyboardInterrupt:
-        print("Application interrupted by user")
+        logger.info("Application interrupted by user")
     except Exception as e:
         messagebox.showerror("Error", f"Application error: {str(e)}")
 

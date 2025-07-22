@@ -5,6 +5,10 @@ Loading bar utilities for long-running operations.
 import threading
 import time
 
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 class LoadingBar:
     """Simple animated loading bar for long operations"""

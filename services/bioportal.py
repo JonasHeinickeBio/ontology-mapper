@@ -6,7 +6,10 @@ import os
 
 import requests
 
+from config.logging_config import get_logger
 from utils.loading import LoadingBar
+
+logger = get_logger(__name__)
 
 
 class BioPortalLookup:
@@ -78,7 +81,7 @@ class BioPortalLookup:
             return results
         except Exception as e:
             loading_bar.stop()
-            print(f"❌ BioPortal API Error: {e}")
+            logger.error(f"BioPortal API Error: {e}")
             return []
         finally:
             loading_bar.stop()

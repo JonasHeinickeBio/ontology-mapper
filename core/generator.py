@@ -9,9 +9,12 @@ from datetime import datetime
 from rdflib import OWL, RDF, RDFS, SKOS, Graph, Literal, URIRef
 from rdflib.namespace import DCTERMS
 
+from config.logging_config import get_logger
 from utils.helpers import clean_description, deduplicate_synonyms, determine_alignment_type
 
 from .parser import OntologyParser
+
+logger = get_logger(__name__)
 
 
 class OntologyGenerator:
@@ -25,8 +28,7 @@ class OntologyGenerator:
         report_file: str | None = None,
     ):
         """Generate improved ontology with selected alignments"""
-        print("\n💾 Generating Improved Ontology")
-        print("=" * 35)
+        logger.info("Generating Improved Ontology")
 
         # Create enhanced graph
         improved_graph = Graph()
@@ -133,8 +135,8 @@ class OntologyGenerator:
 
                 total_alignments += 1
                 source_icon = "🌐" if alignment["source"] == "bioportal" else "🔬"
-                print(
-                    f"✅ {source_icon} {concept_key} → {alignment['label']} ({alignment['ontology']}) [{alignment_type}]"
+                logger.info(
+                    f"{source_icon} {concept_key} → {alignment['label']} ({alignment['ontology']}) [{alignment_type}]"
                 )
 
         # Add enhanced provenance using PROV-O vocabulary
@@ -222,28 +224,27 @@ class OntologyGenerator:
                 json.dump(report, f, indent=2)
 
         # Print summary
-        print("\n🎉 SUCCESS!")
-        print(f"  Input: {ontology.ttl_file}")
-        print(f"  Output: {output_file}")
+        logger.info("SUCCESS!")
+        logger.info(f"Input: {ontology.ttl_file}")
+        logger.info(f"Output: {output_file}")
         if report_file:
-            print(f"  Report: {report_file}")
-        print(f"  Original triples: {len(ontology.graph):,}")
-        print(f"  New triples: {len(improved_graph) - len(ontology.graph):,}")
-        print(f"  Total triples: {len(improved_graph):,}")
-        print(f"  Concepts aligned: {len(selections)}")
-        print(f"  Total alignments: {total_alignments}")
+            logger.info(f"Report: {report_file}")
+        logger.info(f"Original triples: {len(ontology.graph):,}")
+        logger.info(f"New triples: {len(improved_graph) - len(ontology.graph):,}")
+        logger.info(f"Total triples: {len(improved_graph):,}")
+        logger.info(f"Concepts aligned: {len(selections)}")
+        logger.info(f"Total alignments: {total_alignments}")
 
         # Show file size
         if os.path.exists(output_file):
             size = os.path.getsize(output_file)
-            print(f"  File size: {size:,} bytes")
+            logger.info(f"File size: {size:,} bytes")
 
     def generate_single_word_ontology(
         self, concept: dict, selections: dict, output_file: str, report_file: str | None = None
     ):
         """Generate ontology for single word query"""
-        print("\n💾 Generating Ontology for Single Word Query")
-        print("=" * 45)
+        logger.info("Generating Ontology for Single Word Query")
 
         # Create new graph
         graph = Graph()
@@ -318,8 +319,8 @@ class OntologyGenerator:
 
                 total_alignments += 1
                 source_icon = "🌐" if alignment["source"] == "bioportal" else "🔬"
-                print(
-                    f"✅ {source_icon} {concept_key} → {alignment['label']} ({alignment['ontology']}) [{alignment_type}]"
+                logger.info(
+                    f"{source_icon} {concept_key} → {alignment['label']} ({alignment['ontology']}) [{alignment_type}]"
                 )
 
         # Add provenance
@@ -352,15 +353,15 @@ class OntologyGenerator:
                 json.dump(report, f, indent=2)
 
         # Print summary
-        print("\n🎉 SUCCESS!")
-        print(f"  Query: {concept['label']}")
-        print(f"  Output: {output_file}")
+        logger.info("SUCCESS!")
+        logger.info(f"Query: {concept['label']}")
+        logger.info(f"Output: {output_file}")
         if report_file:
-            print(f"  Report: {report_file}")
-        print(f"  Total triples: {len(graph):,}")
-        print(f"  Total alignments: {total_alignments}")
+            logger.info(f"Report: {report_file}")
+        logger.info(f"Total triples: {len(graph):,}")
+        logger.info(f"Total alignments: {total_alignments}")
 
         # Show file size
         if os.path.exists(output_file):
             size = os.path.getsize(output_file)
-            print(f"  File size: {size:,} bytes")
+            logger.info(f"File size: {size:,} bytes")

@@ -4,6 +4,10 @@ Ontology parser for TTL files.
 
 from rdflib import RDF, RDFS, Graph
 
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 class OntologyParser:
     """Parses and analyzes TTL ontology files"""
@@ -18,7 +22,7 @@ class OntologyParser:
         """Parse the TTL file and extract concepts"""
         try:
             self.graph.parse(self.ttl_file, format="turtle")
-            print(f"✅ Loaded {len(self.graph)} triples from {self.ttl_file}")
+            logger.info(f"Loaded {len(self.graph)} triples from {self.ttl_file}")
 
             # Extract classes
             for s, _p, _o in self.graph.triples((None, RDF.type, RDFS.Class)):
@@ -42,11 +46,11 @@ class OntologyParser:
                         }
                     )
 
-            print(f"📊 Found {len(self.classes)} classes and {len(self.instances)} instances")
+            logger.info(f"Found {len(self.classes)} classes and {len(self.instances)} instances")
             return True
 
         except Exception as e:
-            print(f"❌ Error parsing {self.ttl_file}: {e}")
+            logger.error(f"Error parsing {self.ttl_file}: {e}")
             return False
 
     def get_priority_concepts(self) -> list[dict]:

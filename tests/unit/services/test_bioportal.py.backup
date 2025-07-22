@@ -1,0 +1,276 @@
+"""
+Unit tests for services.bioportal module.
+"""
+
+import json
+import logging
+import unittest
+from unittest.mock import Mock, patch
+
+import requests
+
+from services.bioportal import BioPortalLookup
+from utils.loading import LoadingBar
+
+        self.assertEqual(result, [])
+        mock_logger.error.assert_called()
+        mock_loading_bar_instance.stop.assert_called()  # Just check it was calledokup
+
+
+class TestBioPortalLookup(unittest.TestCase):
+    """Test cases for BioPortalLookup class."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.logger = logging.getLogger(__name__)
+        self.api_key = "test_api_key"
+        self.lookup = BioPortalLookup(self.api_key)
+
+    def test_init_with_api_key(self):
+        """Test BioPortalLookup initialization with API key."""
+        self.assertEqual(self.lookup.api_key, self.api_key)
+        self.assertEqual(self.lookup.base_url, "https://data.bioontology.org/search")
+
+    def test_init_without_api_key(self):
+        """Test BioPortalLookup initialization without API key."""
+        with patch.dict('os.environ', {'BIOPORTAL_API_KEY': 'env_key'}):
+            lookup = BioPortalLookup()
+            self.assertEqual(lookup.api_key, 'env_key')
+
+    def test_init_no_api_key_env(self):
+        """Test BioPortalLookup initialization without API key or env var."""
+        with patch.dict('os.environ', {}, clear=True):
+            lookup = BioPortalLookup()
+            self.assertIsNone(lookup.api_key)
+
+    def test_search_demo_mode(self):
+        """Test search in demo mode (no API key)."""
+        lookup = BioPortalLookup(api_key="your_api_key_here")
+        result = lookup.search("COVID-19")
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["label"], "Demo: COVID-19")
+        self.assertEqual(result[0]["ontology"], "DEMO")
+        self.assertEqual(result[0]["source"], "bioportal_demo")
+
+    def test_search_demo_mode_none_api_key(self):
+        """Test search in demo mode with None API key."""
+        lookup = BioPortalLookup(api_key=None)
+        result = lookup.search("fatigue")
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["label"], "Demo: fatigue")
+        self.assertEqual(result[0]["source"], "bioportal_demo")
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_success(self, mock_get, mock_loading_bar):
+        """Test successful search with API key."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "collection": [
+                {
+                    "prefLabel": "COVID-19",
+                    "@id": "http://purl.obolibrary.org/obo/MONDO_0100096",
+                    "definition": ["A disease caused by SARS-CoV-2"],
+                    "synonym": ["SARS-CoV-2 infection"],
+                    "cui": ["C5203670"],
+                    "links": {
+                        "ontology": "http://data.bioontology.org/ontologies/MONDO"
+                    }
+                }
+            ]
+        }
+        mock_get.return_value = mock_response
+
+        result = self.lookup.search("COVID-19")
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["label"], "COVID-19")
+        self.assertEqual(result[0]["uri"], "http://purl.obolibrary.org/obo/MONDO_0100096")
+        self.assertEqual(result[0]["ontology"], "MONDO")
+        self.assertEqual(result[0]["source"], "bioportal")
+
+        # Verify loading bar was used
+        mock_loading_bar.assert_called_once()
+        mock_loading_bar_instance.start.assert_called_once()
+        mock_loading_bar_instance.stop.assert_called_once()
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_with_ontologies(self, mock_get, mock_loading_bar):
+        """Test search with ontology filter."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"collection": []}
+        mock_get.return_value = mock_response
+
+        self.lookup.search("test", ontologies="NCIT,MONDO")
+
+        # Verify ontology parameter was passed
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args
+        self.assertIn("ontologies", call_args[1]["params"])
+        self.assertEqual(call_args[1]["params"]["ontologies"], "NCIT,MONDO")
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_with_max_results(self, mock_get, mock_loading_bar):
+        """Test search with max results parameter."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"collection": []}
+        mock_get.return_value = mock_response
+
+        self.lookup.search("test", max_results=10)
+
+        # Verify pagesize parameter was passed
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args
+        self.assertEqual(call_args[1]["params"]["pagesize"], 10)
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_http_error(self, mock_get, mock_loading_bar):
+        """Test search with HTTP error."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Unauthorized")
+        mock_get.return_value = mock_response
+
+        with patch('services.bioportal.logger') as mock_logger:
+            result = self.lookup.search("test")
+
+        self.assertEqual(result, [])
+        mock_logger.error.assert_called()
+        mock_loading_bar_instance.stop.assert_called()  # Just check it was called
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_connection_error(self, mock_get, mock_loading_bar):
+        """Test search with connection error."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_get.side_effect = requests.exceptions.ConnectionError("Connection failed")
+
+        with patch('services.bioportal.logger') as mock_logger:
+            result = self.lookup.search("test")
+
+        self.assertEqual(result, [])
+        mock_logger.error.assert_called()
+        mock_loading_bar_instance.stop.assert_called()  # Just check it was called
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_json_decode_error(self, mock_get, mock_loading_bar):
+        """Test search with JSON decode error."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "doc", 0)
+        mock_get.return_value = mock_response
+
+        with patch('services.bioportal.logger') as mock_logger:
+            result = self.lookup.search("test")
+
+        self.assertEqual(result, [])
+        mock_logger.error.assert_called()
+        mock_loading_bar_instance.stop.assert_called_once()
+
+    @patch('services.bioportal.LoadingBar')
+    @patch('services.bioportal.requests.get')
+    def test_search_empty_response(self, mock_get, mock_loading_bar):
+        """Test search with empty response."""
+        mock_loading_bar_instance = Mock()
+        mock_loading_bar.return_value = mock_loading_bar_instance
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"collection": []}
+        mock_get.return_value = mock_response
+
+        result = self.lookup.search("nonexistent")
+
+        self.assertEqual(result, [])
+        mock_loading_bar_instance.start.assert_called_once()
+        mock_loading_bar_instance.stop.assert_called_once()
+
+    def test_search_url_construction(self):
+        """Test that search URL and parameters are constructed correctly."""
+        with patch('services.bioportal.LoadingBar'), \
+             patch('services.bioportal.requests.get') as mock_get:
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"collection": []}
+            mock_get.return_value = mock_response
+
+            self.lookup.search("test query")
+
+            # Verify URL construction
+            mock_get.assert_called_once()
+            call_args = mock_get.call_args
+            self.assertEqual(call_args[0][0], self.lookup.base_url)
+
+            # Verify parameters
+            params = call_args[1]["params"]
+            self.assertEqual(params["q"], "test query")
+            self.assertEqual(params["apikey"], self.api_key)
+            self.assertEqual(params["format"], "json")
+
+    def test_search_default_parameters(self):
+        """Test that default parameters are set correctly."""
+        with patch('services.bioportal.LoadingBar'), \
+             patch('services.bioportal.requests.get') as mock_get:
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"collection": []}
+            mock_get.return_value = mock_response
+
+            self.lookup.search("test")
+
+            # Verify default parameters
+            call_args = mock_get.call_args
+            params = call_args[1]["params"]
+            self.assertEqual(params["pagesize"], 5)
+            self.assertEqual(params["format"], "json")
+
+    def test_search_timeout_parameter(self):
+        """Test that timeout parameter is set correctly."""
+        with patch('services.bioportal.LoadingBar'), \
+             patch('services.bioportal.requests.get') as mock_get:
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"collection": []}
+            mock_get.return_value = mock_response
+
+            self.lookup.search("test")
+
+            # Verify timeout parameter
+            call_args = mock_get.call_args
+            self.assertEqual(call_args[1]["timeout"], 30)
+
+
+if __name__ == '__main__':
+    unittest.main()

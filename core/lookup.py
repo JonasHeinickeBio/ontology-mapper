@@ -3,7 +3,10 @@ Concept lookup orchestration across multiple services.
 """
 
 from config import SEARCH_STRATEGIES
+from config.logging_config import get_logger
 from services import BioPortalLookup, OLSLookup, ResultComparator
+
+logger = get_logger(__name__)
 
 
 class ConceptLookup:
@@ -33,7 +36,7 @@ class ConceptLookup:
         # Show progress for multiple variants
         variants = strategy["variants"]
         if len(variants) > 1:
-            print(f"🔄 Searching {len(variants)} variants for '{label}'...")
+            logger.info(f"Searching {len(variants)} variants for '{label}'...")
 
         # Collect results from both services
         all_bp_results = []
@@ -42,7 +45,7 @@ class ConceptLookup:
         for i, variant in enumerate(variants, 1):
             # Show progress for multiple variants
             if len(variants) > 1:
-                print(f"  [{i}/{len(variants)}] Searching: '{variant}'")
+                logger.debug(f"[{i}/{len(variants)}] Searching: '{variant}'")
 
             # BioPortal search
             bp_results = self.bioportal.search(variant, ontologies, max_results=max_results)

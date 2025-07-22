@@ -5,7 +5,10 @@ OLS API client for ontology lookups.
 import requests
 
 from config import BIOPORTAL_TO_OLS_MAPPING
+from config.logging_config import get_logger
 from utils.loading import LoadingBar
+
+logger = get_logger(__name__)
 
 
 class OLSLookup:
@@ -58,7 +61,7 @@ class OLSLookup:
             return results
         except Exception as e:
             loading_bar.stop()
-            print(f"❌ OLS API Error: {e}")
+            logger.error(f"OLS API Error: {e}")
             return []
         finally:
             loading_bar.stop()

@@ -5,32 +5,47 @@ Example: Basic concept lookup
 
 import sys
 
+from config.logging_config import get_logger, setup_logging
 from core.lookup import ConceptLookup
 
 sys.path.append("..")
 
+# Setup logging for the example
+setup_logging(level="INFO", console=True)
+logger = get_logger(__name__)
+
 
 def main():
     # Initialize the lookup service
-    lookup = ConceptLookup()
+    from services import BioPortalLookup, OLSLookup
+
+    bioportal = BioPortalLookup()
+    ols = OLSLookup()
+    lookup = ConceptLookup(bioportal, ols)
 
     # Search for a concept
-    concept = "breast cancer"
-    print(f"Searching for: {concept}")
+    concept = {
+        "key": "breast_cancer",
+        "label": "breast cancer",
+        "type": "Disease",
+        "category": "clinical",
+    }
+
+    logger.info(f"Searching for: {concept['label']}")
 
     # Perform lookup
-    results = lookup.search(concept)
+    results, comparison = lookup.lookup_concept(concept)
 
     # Display results
     if results:
-        print(f"\nFound {len(results)} results:")
+        logger.info(f"Found {len(results)} results:")
         for i, result in enumerate(results[:5], 1):  # Show top 5
-            print(f"{i}. {result['label']} ({result['id']})")
-            print(f"   Source: {result['source']}")
-            print(f"   Definition: {result.get('definition', 'N/A')[:100]}...")
-            print()
+            logger.info(f"{i}. {result['label']} ({result['uri']})")
+            logger.info(f"   Source: {result['source']}")
+            logger.info(f"   Definition: {result.get('description', 'N/A')[:100]}...")
+            logger.info("")
     else:
-        print("No results found")
+        logger.info("No results found")
 
 
 if __name__ == "__main__":

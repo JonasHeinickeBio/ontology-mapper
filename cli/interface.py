@@ -9,8 +9,11 @@ import sys
 from typing import Any
 
 from config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
+from config.logging_config import get_logger
 from core import ConceptLookup, OntologyGenerator, OntologyParser
 from services import BioPortalLookup, OLSLookup
+
+logger = get_logger(__name__)
 
 
 class CLIInterface:
@@ -95,23 +98,23 @@ Examples:
 
     def _list_available_ontologies(self):
         """Display available ontologies and their descriptions"""
-        print("\n🔍 Available Ontologies")
-        print("=" * 50)
+        logger.info("Available Ontologies")
+        logger.info("=" * 50)
 
-        print("\n📋 Individual Ontologies:")
+        logger.info("\nIndividual Ontologies:")
         for ont, desc in ONTOLOGY_CONFIGS.items():
-            print(f"  {ont:12s} - {desc}")
+            logger.info(f"  {ont:12s} - {desc}")
 
-        print("\n🎯 Recommended Combinations:")
+        logger.info("\nRecommended Combinations:")
         for category, onts in ONTOLOGY_COMBINATIONS.items():
-            print(f"  {category:15s} - {onts}")
+            logger.info(f"  {category:15s} - {onts}")
 
-        print("\n💡 Usage Examples:")
-        print("  --ontologies 'HP,NCIT'           # Phenotypes and clinical terms")
-        print("  --ontologies 'MONDO,DOID'        # Disease ontologies")
-        print("  --ontologies 'CHEBI,RXNORM'      # Chemical and drug terms")
-        print("  --ontologies 'GO,PRO'            # Gene/protein related")
-        print("\n")
+        logger.info("\nUsage Examples:")
+        logger.info("  --ontologies 'HP,NCIT'           # Phenotypes and clinical terms")
+        logger.info("  --ontologies 'MONDO,DOID'        # Disease ontologies")
+        logger.info("  --ontologies 'CHEBI,RXNORM'      # Chemical and drug terms")
+        logger.info("  --ontologies 'GO,PRO'            # Gene/protein related")
+        logger.info("")
 
     def run(self):
         """Main CLI entry point"""
@@ -124,16 +127,16 @@ Examples:
 
         # Validate arguments
         if not args.single_word and not args.ttl_file:
-            print("❌ Error: Either provide a TTL file or use --single-word option")
+            logger.error("Either provide a TTL file or use --single-word option")
             self.parser.print_help()
             sys.exit(1)
 
         if args.ttl_file and not os.path.exists(args.ttl_file):
-            print(f"❌ Error: File {args.ttl_file} not found")
+            logger.error(f"File {args.ttl_file} not found")
             sys.exit(1)
 
-        print("\n🔧 BioPortal & OLS Ontology Alignment CLI")
-        print("=" * 45)
+        logger.info("BioPortal & OLS Ontology Alignment CLI")
+        logger.info("=" * 45)
 
         # Initialize components
         bioportal = BioPortalLookup(args.api_key)
@@ -143,9 +146,9 @@ Examples:
 
         # Show ontologies being used
         if args.ontologies:
-            print(f"🎯 Using ontologies: {args.ontologies}")
+            logger.info(f"Using ontologies: {args.ontologies}")
         else:
-            print("🎯 Using default ontology selection strategy")
+            logger.info("Using default ontology selection strategy")
 
         # Handle single word mode
         if args.single_word:
@@ -162,10 +165,10 @@ Examples:
         # Get concepts to improve
         concepts = ontology.get_priority_concepts()
         if not concepts:
-            print("❌ No priority concepts found in ontology")
+            logger.error("No priority concepts found in ontology")
             sys.exit(1)
 
-        print(f"\n🎯 Found {len(concepts)} priority concepts to improve")
+        logger.info(f"Found {len(concepts)} priority concepts to improve")
 
         # Handle batch mode
         if args.batch_mode:
@@ -176,28 +179,30 @@ Examples:
         # Generate improved ontology
         if selections:
             if args.terminal_only:
-                print("\n🎉 TERMINAL-ONLY MODE: Selections processed")
-                print(f"  Concepts aligned: {len(selections)}")
+                logger.info("TERMINAL-ONLY MODE: Selections processed")
+                logger.info(f"Concepts aligned: {len(selections)}")
                 total_alignments = sum(len(alignments) for alignments in selections.values())
-                print(f"  Total alignments: {total_alignments}")
+                logger.info(f"Total alignments: {total_alignments}")
                 for concept_key, alignments in selections.items():
-                    print(f"\n  {concept_key}:")
+                    logger.info(f"{concept_key}:")
                     for alignment in alignments:
                         source_icon = "🌐" if alignment["source"] == "bioportal" else "🔬"
-                        print(f"    {source_icon} {alignment['label']} ({alignment['ontology']})")
-                        print(f"      URI: {alignment['uri']}")
+                        logger.info(
+                            f"  {source_icon} {alignment['label']} ({alignment['ontology']})"
+                        )
+                        logger.info(f"    URI: {alignment['uri']}")
                         if alignment.get("description"):
-                            print(f"      Description: {alignment['description'][:100]}...")
+                            logger.info(f"    Description: {alignment['description'][:100]}...")
             else:
                 generator.generate_improved_ontology(ontology, selections, args.output, args.report)
         else:
-            print("❌ No selections made. Exiting.")
+            logger.error("No selections made. Exiting.")
 
     def _single_word_mode(self, args, lookup: ConceptLookup, generator: OntologyGenerator):
         """Handle single word query mode"""
-        print("\n🔍 Single Word Query Mode")
-        print(f"Query: '{args.single_word}'")
-        print("=" * 40)
+        logger.info("Single Word Query Mode")
+        logger.info(f"Query: '{args.single_word}'")
+        logger.info("=" * 40)
 
         # Create a mock concept for the single word
         concept = {
@@ -211,20 +216,19 @@ Examples:
         options, comparison = lookup.lookup_concept(concept)
 
         if not options:
-            print(f"❌ No results found for '{args.single_word}'")
+            logger.error(f"No results found for '{args.single_word}'")
             return
 
         # Display comparison summary
         if comparison["discrepancies"]:
-            print("\n⚠️  Service Comparison Alert:")
+            logger.warning("Service Comparison Alert:")
             for discrepancy in comparison["discrepancies"]:
-                print(f"   • {discrepancy}")
-            print(f"   BioPortal: {comparison['bioportal_count']} results")
-            print(f"   OLS: {comparison['ols_count']} results")
-            print()
+                logger.warning(f"• {discrepancy}")
+            logger.warning(f"BioPortal: {comparison['bioportal_count']} results")
+            logger.warning(f"OLS: {comparison['ols_count']} results")
 
         # Display options
-        print(f"✅ Found {len(options)} standardized terms:")
+        logger.info(f"Found {len(options)} standardized terms:")
         for j, result in enumerate(options, 1):
             source_indicator = (
                 "🌐"
@@ -235,9 +239,9 @@ Examples:
             )
             ols_only_indicator = " (OLS-only)" if result.get("ols_only") else ""
 
-            print(f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}")
-            print(f"     Ontology: {result['ontology']} | Source: {result['source']}")
-            print(f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}")
+            logger.info(f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}")
+            logger.info(f"     Ontology: {result['ontology']} | Source: {result['source']}")
+            logger.info(f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}")
 
             # Show description if available
             if result.get("description") and result["description"].strip():
@@ -246,16 +250,16 @@ Examples:
                     if len(result["description"]) > 120
                     else result["description"]
                 )
-                print(f"     Description: {desc}")
+                logger.info(f"     Description: {desc}")
 
             # Show synonyms if available
             if result.get("synonyms") and len(result["synonyms"]) > 0:
                 synonyms_str = ", ".join(result["synonyms"][:3])  # Show max 3 synonyms
                 if len(result["synonyms"]) > 3:
                     synonyms_str += f" (+ {len(result['synonyms']) - 3} more)"
-                print(f"     Synonyms: {synonyms_str}")
+                logger.info(f"     Synonyms: {synonyms_str}")
 
-            print()
+            logger.info("")
 
         # Get user selection
         while True:

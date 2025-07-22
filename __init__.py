@@ -40,11 +40,18 @@ except ImportError:
     try:
         from cli import main
         from config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS
+        from config.logging_config import get_logger
         from core import ConceptLookup, OntologyGenerator, OntologyParser
         from services import BioPortalLookup, OLSLookup, ResultComparator
         from utils import LoadingBar, clean_description, deduplicate_synonyms
+
+        logger = get_logger(__name__)
     except ImportError as e:
-        print(f"Warning: Could not import some modules: {e}")
+        # Use standard logging as a fallback
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Could not import some modules: {e}")
         main = None
         ONTOLOGY_COMBINATIONS = {}
         ONTOLOGY_CONFIGS = {}

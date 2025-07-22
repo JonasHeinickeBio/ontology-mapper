@@ -6,17 +6,22 @@ Example: Batch processing of concepts
 import json
 import sys
 
+from config.logging_config import get_logger, setup_logging
 from core.lookup import ConceptLookup
-from services.bioportal import BioPortalService
-from services.ols import OLSService
+from services.bioportal import BioPortalLookup
+from services.ols import OLSLookup
 
 sys.path.append("..")
+
+# Setup logging for the example
+setup_logging(level="INFO", console=True)
+logger = get_logger(__name__)
 
 
 def main():
     # Initialize services
-    bioportal = BioPortalService()
-    ols = OLSService()
+    bioportal = BioPortalLookup()
+    ols = OLSLookup()
     lookup = ConceptLookup(bioportal, ols)
 
     # Read concepts from file
@@ -26,20 +31,27 @@ def main():
     results = {}
 
     for concept in concepts:
-        print(f"Processing: {concept}")
+        logger.info(f"Processing: {concept}")
         try:
-            concept_results = lookup.lookup_concept(concept)
-            results[concept] = concept_results
+            # Create concept dict for lookup
+            concept_dict = {
+                "key": concept.replace(" ", "_"),
+                "label": concept,
+                "type": "Term",
+                "category": "general",
+            }
+            concept_results, comparison = lookup.lookup_concept(concept_dict)
+            results[concept] = {"results": concept_results, "comparison": comparison}
         except Exception as e:
-            print(f"Error processing {concept}: {e}")
+            logger.error(f"Error processing {concept}: {e}")
             results[concept] = {"error": str(e)}
 
     # Save results
     with open("batch_results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nProcessed {len(concepts)} concepts")
-    print("Results saved to batch_results.json")
+    logger.info(f"Processed {len(concepts)} concepts")
+    logger.info("Results saved to batch_results.json")
 
 
 if __name__ == "__main__":

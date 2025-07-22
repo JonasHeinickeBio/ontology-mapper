@@ -8,6 +8,10 @@ Standalone demo version that includes embedded CLI functionality.
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, ttk
 
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 # Embedded minimal CLI classes for demo
 class DemoBioPortalLookup:
@@ -263,7 +267,7 @@ def main():
         app = DemoBioPortalGUI()
         app.run()
     except Exception as e:
-        print(f"Demo error: {e}")
+        logger.error(f"Demo error: {e}")
 
 
 if __name__ == "__main__":
