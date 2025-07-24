@@ -98,23 +98,42 @@ Examples:
 
     def _list_available_ontologies(self):
         """Display available ontologies and their descriptions"""
+        # Output to both logger (for unit tests) and stderr (for E2E tests)
         logger.info("Available Ontologies")
-        logger.info("=" * 50)
+        print("Available Ontologies", file=sys.stderr)
+
+        separator = "=" * 50
+        logger.info(separator)
+        print(separator, file=sys.stderr)
 
         logger.info("\nIndividual Ontologies:")
+        print("\nIndividual Ontologies:", file=sys.stderr)
         for ont, desc in ONTOLOGY_CONFIGS.items():
-            logger.info(f"  {ont:12s} - {desc}")
+            msg = f"  {ont:12s} - {desc}"
+            logger.info(msg)
+            print(msg, file=sys.stderr)
 
         logger.info("\nRecommended Combinations:")
+        print("\nRecommended Combinations:", file=sys.stderr)
         for category, onts in ONTOLOGY_COMBINATIONS.items():
-            logger.info(f"  {category:15s} - {onts}")
+            msg = f"  {category:15s} - {onts}"
+            logger.info(msg)
+            print(msg, file=sys.stderr)
 
         logger.info("\nUsage Examples:")
-        logger.info("  --ontologies 'HP,NCIT'           # Phenotypes and clinical terms")
-        logger.info("  --ontologies 'MONDO,DOID'        # Disease ontologies")
-        logger.info("  --ontologies 'CHEBI,RXNORM'      # Chemical and drug terms")
-        logger.info("  --ontologies 'GO,PRO'            # Gene/protein related")
+        print("\nUsage Examples:", file=sys.stderr)
+        examples = [
+            "  --ontologies 'HP,NCIT'           # Phenotypes and clinical terms",
+            "  --ontologies 'MONDO,DOID'        # Disease ontologies",
+            "  --ontologies 'CHEBI,RXNORM'      # Chemical and drug terms",
+            "  --ontologies 'GO,PRO'            # Gene/protein related",
+        ]
+        for example in examples:
+            logger.info(example)
+            print(example, file=sys.stderr)
+
         logger.info("")
+        print("", file=sys.stderr)
 
     def run(self):
         """Main CLI entry point"""
@@ -146,9 +165,9 @@ Examples:
 
         # Show ontologies being used
         if args.ontologies:
-            logger.info(f"Using ontologies: {args.ontologies}")
+            print(f"Using ontologies: {args.ontologies}", file=sys.stderr)
         else:
-            logger.info("Using default ontology selection strategy")
+            print("Using default ontology selection strategy", file=sys.stderr)
 
         # Handle single word mode
         if args.single_word:
@@ -200,9 +219,17 @@ Examples:
 
     def _single_word_mode(self, args, lookup: ConceptLookup, generator: OntologyGenerator):
         """Handle single word query mode"""
+        # Output to both logger (for unit tests) and stderr (for E2E tests)
         logger.info("Single Word Query Mode")
-        logger.info(f"Query: '{args.single_word}'")
-        logger.info("=" * 40)
+        print("Single Word Query Mode", file=sys.stderr)
+
+        query_msg = f"Query: '{args.single_word}'"
+        logger.info(query_msg)
+        print(query_msg, file=sys.stderr)
+
+        separator = "=" * 40
+        logger.info(separator)
+        print(separator, file=sys.stderr)
 
         # Create a mock concept for the single word
         concept = {

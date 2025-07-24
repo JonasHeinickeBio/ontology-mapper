@@ -7,7 +7,7 @@ import json
 import os
 import tempfile
 import unittest
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -86,10 +86,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -139,9 +147,14 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to fail for BioPortal and succeed for OLS
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 raise Exception("BioPortal API Error")
-            elif "ebi.ac.uk" in url:
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
             else:
                 raise Exception("API Error")
@@ -180,10 +193,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -405,9 +426,14 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return timeout for BioPortal and success for OLS
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 raise requests.exceptions.Timeout("Request timed out")
-            elif "ebi.ac.uk" in url:
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
             else:
                 raise requests.exceptions.Timeout("Request timed out")
@@ -458,10 +484,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -498,10 +532,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -554,10 +596,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -621,10 +671,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 
@@ -793,10 +851,18 @@ class TestAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
+
             else:
                 return mock_bp_response
 

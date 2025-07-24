@@ -5,6 +5,7 @@ Tests BioPortal GUI components using comprehensive mocking.
 
 import sys
 import unittest
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -101,7 +102,7 @@ class TestBioPortalGUI(unittest.TestCase):
         test_options = [
             {"uri": "http://test.com", "label": "test", "source": "bioportal", "ontology": "NCIT"}
         ]
-        test_comparison = {"discrepancies": []}
+        test_comparison: dict[str, Any] = {"discrepancies": []}
 
         window = ConceptAlignmentWindow(MagicMock(), test_concept, test_options, test_comparison)
 
@@ -513,11 +514,18 @@ class TestBioPortalGUI(unittest.TestCase):
         gui.update_status("Test status")
 
     @patch.dict("sys.modules")
-    def test_bioportal_gui_utility_methods(self):
+    @patch("subprocess.run")
+    @patch("os.path.exists", return_value=True)
+    @patch("os.path.dirname")
+    def test_bioportal_gui_utility_methods(self, mock_dirname, mock_exists, mock_subprocess):
         """Test BioPortal GUI utility methods"""
         # Apply comprehensive mocking
         for module_name, mock_module in self.mock_modules.items():
             sys.modules[module_name] = mock_module
+
+        # Mock subprocess to prevent actual system calls
+        mock_subprocess.return_value = MagicMock(returncode=0)
+        mock_dirname.return_value = "/tmp"
 
         # Import after mocking
         from gui.bioportal_gui import BioPortalGUI
@@ -541,32 +549,25 @@ class TestBioPortalGUI(unittest.TestCase):
         mock_log_text.get.return_value = "Test log content"
         gui.log_text = mock_log_text
 
-        try:
-            gui.save_log()
-        except (TypeError, AttributeError, OSError):
-            # Expected in mock environment
-            pass
+        with patch("tkinter.filedialog.asksaveasfilename", return_value="/tmp/test_log.txt"):
+            with patch("builtins.open", create=True) as mock_open:
+                gui.save_log()
+                # Verify the file operations were attempted
+                mock_open.assert_called()
 
-        # Test open_output_folder with proper output_file mock
-        try:
-            gui.open_output_folder()
-        except (OSError, FileNotFoundError, Exception):
-            # Expected since we're trying to open non-existent directories
-            pass
+        # Test open_output_folder with mocked subprocess
+        gui.open_output_folder()
+        # Verify subprocess was called (for opening folder)
+        mock_subprocess.assert_called()
 
-        # Test view_ontology
-        try:
-            gui.view_ontology()
-        except (OSError, FileNotFoundError, Exception):
-            # Expected in mock environment
-            pass
+        # Test view_ontology with mocked subprocess
+        gui.view_ontology()
 
         # Test export_report
-        try:
+        gui.report_file = MagicMock()
+        gui.report_file.get.return_value = "/tmp/test_report.json"
+        with patch("os.path.exists", return_value=True):
             gui.export_report()
-        except (AttributeError, TypeError, OSError):
-            # Expected in mock environment
-            pass
 
     @patch.dict("sys.modules")
     def test_bioportal_gui_result_handling(self):
@@ -626,17 +627,32 @@ class TestBioPortalGUI(unittest.TestCase):
             self.assertTrue(hasattr(gui, "start_processing"))
 
     @patch.dict("sys.modules")
-    def test_bioportal_gui_utility_methods_basic(self):
+    @patch("subprocess.run")
+    @patch("os.path.exists", return_value=True)
+    @patch("os.path.dirname")
+    def test_bioportal_gui_utility_methods_basic(self, mock_dirname, mock_exists, mock_subprocess):
         """Test BioPortal GUI basic utility methods"""
         # Apply comprehensive mocking
         for module_name, mock_module in self.mock_modules.items():
             sys.modules[module_name] = mock_module
+
+        # Mock subprocess to prevent actual system calls
+        mock_subprocess.return_value = MagicMock(returncode=0)
+        mock_dirname.return_value = "/tmp"
 
         # Import after mocking
         from gui.bioportal_gui import BioPortalGUI
 
         # Create GUI instance
         gui = BioPortalGUI()
+
+        # Mock file paths to avoid MagicMock path issues
+        gui.output_file = MagicMock()
+        gui.output_file.get.return_value = "/tmp/test_output.ttl"
+        gui.ttl_file = MagicMock()
+        gui.ttl_file.get.return_value = "/tmp/test_input.ttl"
+        gui.report_file = MagicMock()
+        gui.report_file.get.return_value = "/tmp/test_report.json"
 
         # Test utility methods
         gui.browse_ontologies()

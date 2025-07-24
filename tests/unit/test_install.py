@@ -28,11 +28,8 @@ class TestParallelServiceCalls(unittest.TestCase):
         self.ols = OLSLookup()
 
     @patch("utils.loading.LoadingBar")
-    @patch("services.bioportal.requests.get")
-    @patch("services.ols.requests.get")
-    def test_parallel_service_calls_integration(
-        self, mock_ols_get, mock_bioportal_get, mock_loading
-    ):
+    @patch("requests.get")
+    def test_parallel_service_calls_integration(self, mock_requests_get, mock_loading):
         """Test parallel calls to both services"""
         logger.info("Testing parallel service calls integration")
 
@@ -54,7 +51,6 @@ class TestParallelServiceCalls(unittest.TestCase):
                 }
             ]
         }
-        mock_bioportal_get.return_value = mock_bp_response
 
         # Mock OLS response
         mock_ols_response = MagicMock()
@@ -72,7 +68,22 @@ class TestParallelServiceCalls(unittest.TestCase):
                 ]
             }
         }
-        mock_ols_get.return_value = mock_ols_response
+
+        # Configure mock to return different responses based on URL
+        def mock_response(url, *args, **kwargs):
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
+                return mock_bp_response
+            elif hostname and hostname.endswith("ebi.ac.uk"):
+                return mock_ols_response
+            else:
+                return mock_bp_response
+
+        mock_requests_get.side_effect = mock_response
 
         logger.debug("Calling BioPortal search")
         bp_results = self.bioportal.search("diabetes", ontologies="MONDO")
@@ -83,14 +94,14 @@ class TestParallelServiceCalls(unittest.TestCase):
         logger.debug(f"OLS results: {ols_results}")
 
         # Debug output
-        logger.debug(f"BioPortal mock called: {mock_bioportal_get.called}")
-        logger.debug(f"OLS mock called: {mock_ols_get.called}")
+        logger.debug(f"Requests mock called: {mock_requests_get.called}")
+        logger.debug(f"Requests mock call count: {mock_requests_get.call_count}")
         logger.debug(f"BioPortal results count: {len(bp_results)}")
         logger.debug(f"OLS results count: {len(ols_results)}")
 
         # Show the issue
-        print(f"BioPortal mock called: {mock_bioportal_get.called}")
-        print(f"OLS mock called: {mock_ols_get.called}")
+        print(f"Requests mock called: {mock_requests_get.called}")
+        print(f"Requests mock call count: {mock_requests_get.call_count}")
         print(f"BioPortal results count: {len(bp_results)}")
         print(f"OLS results count: {len(ols_results)}")
 

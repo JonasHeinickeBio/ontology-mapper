@@ -84,9 +84,14 @@ class TestServiceAPIIntegration(unittest.TestCase):
 
         # Configure mock to return different responses based on URL
         def mock_response(url, *args, **kwargs):
-            if "bioontology.org" in url:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+
+            if hostname and hostname.endswith("bioontology.org"):
                 return mock_bp_response
-            elif "ebi.ac.uk" in url:
+            elif hostname and hostname.endswith("ebi.ac.uk"):
                 return mock_ols_response
             else:
                 # Default response
