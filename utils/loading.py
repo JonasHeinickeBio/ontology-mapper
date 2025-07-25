@@ -2,32 +2,35 @@
 Loading bar utilities for long-running operations.
 """
 
-import time
 import threading
-from typing import Optional
+import time
+
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class LoadingBar:
     """Simple animated loading bar for long operations"""
-    
+
     def __init__(self, message: str = "Loading", style: str = "dots"):
         self.message = message
         self.style = style
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.styles = {
             "dots": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
             "spinner": ["|", "/", "-", "\\"],
             "bar": ["▱", "▰"],
-            "pulse": ["🔍", "🔎"]
+            "pulse": ["🔍", "🔎"],
         }
-    
+
     def _animate(self):
         """Internal animation loop"""
         frames = self.styles.get(self.style, self.styles["dots"])
         frame_count = len(frames)
         i = 0
-        
+
         while self.running:
             if self.style == "bar":
                 # Progress bar style
@@ -39,10 +42,10 @@ class LoadingBar:
                 # Spinner style
                 frame = frames[i % frame_count]
                 print(f"\r{frame} {self.message}...", end="", flush=True)
-            
+
             time.sleep(0.1)
             i += 1
-    
+
     def start(self):
         """Start the loading animation"""
         if not self.running:
@@ -50,7 +53,7 @@ class LoadingBar:
             self.thread = threading.Thread(target=self._animate)
             self.thread.daemon = True
             self.thread.start()
-    
+
     def stop(self):
         """Stop the loading animation"""
         if self.running:

@@ -20,54 +20,83 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- **Python 3.10 or higher** (leverages modern typing features)
 - pip package manager
 
 ### Quick Install
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/ontology-mapping-tool.git
-cd ontology-mapping-tool
+git clone https://github.com/JonasHeinickeBio/ontology-mapper.git
+cd ontology-mapper
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Install the package
+# Install the package with all dependencies
 pip install -e .
+
+# Or install with development dependencies
+pip install -e .[dev]
+
+# Or install with all optional dependencies
+pip install -e .[all]
+```
+
+### Development Setup
+
+For development, we recommend using the development dependencies:
+
+```bash
+# Install with development dependencies
+pip install -e .[dev]
+
+# Set up pre-commit hooks
+pre-commit install
+
+# Run tests
+pytest
+
+# Run linting
+black .
+isort .
+flake8 .
+mypy .
 ```
 
 ### Setup API Keys
 
 1. Copy the environment template:
+
    ```bash
    cp .env.template .env
    ```
 
 2. Edit `.env` and add your API keys:
-   - Get a BioPortal API key from: https://bioportal.bioontology.org/account
-   - (Optional) Get a UMLS API key from: https://uts.nlm.nih.gov/uts/profile
+   - Get a BioPortal API key from: <https://bioportal.bioontology.org/account>
+   - (Optional) Get a UMLS API key from: <https://uts.nlm.nih.gov/uts/profile>
 
 ## Usage
 
 ### Command Line Interface
 
-#### Basic concept lookup:
+#### Basic concept lookup
+
 ```bash
 python main.py --search "breast cancer"
 ```
 
-#### Process a TTL file:
+#### Process a TTL file
+
 ```bash
 python main.py --input ontology.ttl --output enriched_ontology.ttl
 ```
 
-#### Interactive mode:
+#### Interactive mode
+
 ```bash
 python main.py --interactive
 ```
 
-#### Batch processing:
+#### Batch processing
+
 ```bash
 python main.py --batch concepts.txt --output results.json
 ```
@@ -75,11 +104,13 @@ python main.py --batch concepts.txt --output results.json
 ### Graphical User Interface
 
 Launch the GUI:
+
 ```bash
 python gui/launch_gui.py
 ```
 
 Or use the demo interface:
+
 ```bash
 python gui/demo_gui.py
 ```
@@ -132,17 +163,21 @@ ontology-mapping-tool/
 ## Examples
 
 ### Example 1: Simple Concept Lookup
+
 ```bash
 python main.py --search "diabetes mellitus"
 ```
 
 ### Example 2: Processing TTL File
+
 ```bash
 python main.py --input disease_ontology.ttl --output enhanced_ontology.ttl
 ```
 
 ### Example 3: Batch Processing
+
 Create a file `concepts.txt`:
+
 ```
 breast cancer
 diabetes mellitus
@@ -150,6 +185,7 @@ hypertension
 ```
 
 Then run:
+
 ```bash
 python main.py --batch concepts.txt --output results.json
 ```
@@ -159,27 +195,34 @@ python main.py --batch concepts.txt --output results.json
 ### Core Classes
 
 #### `ConceptLookup`
+
 Main class for performing concept lookups across multiple ontologies.
 
 #### `BioPortalService`
+
 Client for interacting with the BioPortal API.
 
 #### `OLSService`
+
 Client for interacting with the OLS (Ontology Lookup Service) API.
 
 #### `OntologyParser`
+
 Parser for TTL (Turtle) ontology files.
 
 ## Configuration
 
 ### Ontology Configuration
+
 Edit `config/ontologies.py` to customize:
+
 - Supported ontologies
 - API endpoints
 - Search strategies
 - Result filtering
 
 ### Environment Variables
+
 - `BIOPORTAL_API_KEY`: Your BioPortal API key (required)
 - `UMLS_API_KEY`: Your UMLS API key (optional)
 
@@ -194,9 +237,23 @@ Edit `config/ontologies.py` to customize:
 ## Testing
 
 Run the test suite:
+
 ```bash
-python -m pytest tests/
+# Run all tests
+pytest
+
+# Run tests with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test categories
+pytest -m unit
+pytest -m integration
+
+# Run tests excluding slow tests
+pytest -m "not slow"
 ```
+
+For development workflow, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 
@@ -205,6 +262,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For questions, issues, or contributions:
+
 - Open an issue on GitHub
 - Check the documentation in the `docs/` directory
 - Review the example scripts in `examples/`
@@ -218,6 +276,7 @@ For questions, issues, or contributions:
 ## Citation
 
 If you use this tool in your research, please cite:
+
 ```
 [Your citation information here]
 ```
@@ -225,12 +284,15 @@ If you use this tool in your research, please cite:
 ---
 
 **Note**: This tool is designed to complement existing ontology mapping frameworks like SSSOM-py by providing a simple, user-friendly interface for concept lookup and initial mapping tasks.
+
 - `helpers.py`: Common helper functions (text cleaning, deduplication, etc.)
 
 ### Configuration (`config/`)
+
 - `ontologies.py`: Ontology definitions, mappings, and search strategies
 
 ### Command Line Interface (`cli/`)
+
 - `interface.py`: Main CLI interface and argument parsing
 - `main.py`: CLI entry point and error handling
 
@@ -264,6 +326,7 @@ python run_cli.py ontology.ttl --batch-mode selections.json
 ### Environment Setup
 
 Set your BioPortal API key:
+
 ```bash
 export BIOPORTAL_API_KEY="your_api_key_here"
 ```
@@ -275,38 +338,44 @@ Or use the `--api-key` argument.
 The tool supports 24+ ontologies including:
 
 ### Disease & Phenotype
+
 - **MONDO**: Monarch Disease Ontology
 - **HP**: Human Phenotype Ontology
 - **DOID**: Disease Ontology
 - **ORDO**: Orphanet Rare Disease Ontology
 
 ### Clinical & Medical
+
 - **SNOMEDCT**: SNOMED Clinical Terms
 - **ICD10/ICD11**: International Classification of Diseases
 - **LOINC**: Logical Observation Identifiers Names and Codes
 - **CPT**: Current Procedural Terminology
 
 ### Biological
+
 - **GO**: Gene Ontology
 - **CHEBI**: Chemical Entities of Biological Interest
 - **PRO**: Protein Ontology
 - **UBERON**: Anatomical structures
 
-### And many more...
+### And many more
 
 ## Example Workflows
 
 ### Disease Research
+
 ```bash
 python run_cli.py --single-word "cancer" --ontologies "MONDO,HP,DOID,NCIT,ORDO"
 ```
 
 ### Symptom Analysis
+
 ```bash
 python run_cli.py --single-word "headache" --ontologies "HP,SYMP,NCIT"
 ```
 
 ### Chemical/Drug Research
+
 ```bash
 python run_cli.py --single-word "aspirin" --ontologies "CHEBI,RXNORM,NCIT"
 ```
@@ -360,6 +429,7 @@ The original `bioportal_cli.py` (1185+ lines) has been split into focused module
 5. **Utilities extracted**: Common functions in dedicated modules
 
 This modular approach improves:
+
 - **Maintainability**: Easier to update individual components
 - **Testability**: Each module can be tested independently
 - **Reusability**: Components can be imported and used elsewhere
@@ -368,6 +438,7 @@ This modular approach improves:
 ## Future Enhancements
 
 The modular structure makes it easy to add:
+
 - New ontology services
 - Additional output formats
 - Enhanced comparison algorithms

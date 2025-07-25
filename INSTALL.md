@@ -1,5 +1,10 @@
 # Installation Guide
 
+## Prerequisites
+
+- **Python 3.10 or higher** (required for modern typing features)
+- Git (for cloning the repository)
+
 ## Quick Start
 
 1. **Clone or download the repository**
@@ -28,12 +33,12 @@
    ```
 
 5. **Run the tool**
-   
+
    Command line interface:
    ```bash
    python main.py
    ```
-   
+
    Graphical interface:
    ```bash
    python gui/launch_gui.py
