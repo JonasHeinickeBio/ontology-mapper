@@ -254,8 +254,9 @@ Examples:
             logger.warning(f"BioPortal: {comparison['bioportal_count']} results")
             logger.warning(f"OLS: {comparison['ols_count']} results")
 
-        # Display options
+        # Display options to both logger and terminal (stderr)
         logger.info(f"Found {len(options)} standardized terms:")
+        print(f"Found {len(options)} standardized terms:", file=sys.stderr)
         for j, result in enumerate(options, 1):
             source_indicator = (
                 "🌐"
@@ -266,9 +267,15 @@ Examples:
             )
             ols_only_indicator = " (OLS-only)" if result.get("ols_only") else ""
 
-            logger.info(f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}")
-            logger.info(f"     Ontology: {result['ontology']} | Source: {result['source']}")
-            logger.info(f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}")
+            msg1 = f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}"
+            msg2 = f"     Ontology: {result['ontology']} | Source: {result['source']}"
+            msg3 = f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}"
+            logger.info(msg1)
+            logger.info(msg2)
+            logger.info(msg3)
+            print(msg1, file=sys.stderr)
+            print(msg2, file=sys.stderr)
+            print(msg3, file=sys.stderr)
 
             # Show description if available
             if result.get("description") and result["description"].strip():
@@ -278,6 +285,7 @@ Examples:
                     else result["description"]
                 )
                 logger.info(f"     Description: {desc}")
+                print(f"     Description: {desc}", file=sys.stderr)
 
             # Show synonyms if available
             if result.get("synonyms") and len(result["synonyms"]) > 0:
@@ -285,8 +293,10 @@ Examples:
                 if len(result["synonyms"]) > 3:
                     synonyms_str += f" (+ {len(result['synonyms']) - 3} more)"
                 logger.info(f"     Synonyms: {synonyms_str}")
+                print(f"     Synonyms: {synonyms_str}", file=sys.stderr)
 
             logger.info("")
+            print("", file=sys.stderr)
 
         # Get user selection
         while True:

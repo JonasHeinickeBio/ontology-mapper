@@ -13,15 +13,6 @@ repos:
       - id: debug-statements
       - id: check-docstring-first
 
-  - repo: local
-    hooks:
-      - id: delete-empty-files
-        name: 'Delete empty files (custom shell)'
-        entry: bash -c 'find . -type f -empty -delete'
-        language: system
-        types: [file]
-        files: .*
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.5
     hooks:

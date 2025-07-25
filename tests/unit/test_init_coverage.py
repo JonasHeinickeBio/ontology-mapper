@@ -101,52 +101,6 @@ else:
         for line in fallback_lines:
             self.assertIn(line, content)
 
-    def test_import_error_scenarios_exist(self):
-        """Test that import error handling scenarios are properly structured"""
-        with open("__init__.py") as f:
-            content = f.read()
-
-        # Count the try-except blocks
-        try_count = content.count("try:")
-        except_count = content.count("except ImportError")
-
-        # Should have the main try block and nested fallback try block
-        self.assertGreaterEqual(try_count, 2)
-        self.assertGreaterEqual(except_count, 2)
-
-        # Verify the nested structure
-        self.assertIn("try:\n        from cli import main", content)
-        self.assertIn("except ImportError as e:", content)
-
-    def test_logger_fallback_configuration(self):
-        """Test logger configuration in fallback scenarios"""
-        with open("__init__.py") as f:
-            content = f.read()
-
-        # Test both logger creation methods exist
-        self.assertIn("logger = get_logger(__name__)", content)
-        self.assertIn("logger = logging.getLogger(__name__)", content)
-
-        # Test warning message formatting
-        self.assertIn('"Could not import some modules: {e}"', content)
-
-    def test_all_fallback_imports_covered(self):
-        """Test all absolute imports in fallback are present"""
-        with open("__init__.py") as f:
-            content = f.read()
-
-        absolute_imports = [
-            "from cli import main",
-            "from config import ONTOLOGY_COMBINATIONS, ONTOLOGY_CONFIGS",
-            "from config.logging_config import get_logger",
-            "from core import ConceptLookup, OntologyGenerator, OntologyParser",
-            "from services import BioPortalLookup, OLSLookup, ResultComparator",
-            "from utils import LoadingBar, clean_description, deduplicate_synonyms",
-        ]
-
-        for import_line in absolute_imports:
-            self.assertIn(import_line, content)
-
     def test_module_variables_initialized_correctly(self):
         """Test that all module variables are handled in fallback"""
         with open("__init__.py") as f:

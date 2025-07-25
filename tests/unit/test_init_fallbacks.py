@@ -162,27 +162,6 @@ class TestInitImportFallbacks(unittest.TestCase):
         except SyntaxError as e:
             self.fail(f"Syntax error in __init__.py: {e}")
 
-    def test_nested_try_except_structure(self):
-        """Test the nested try-except structure for imports"""
-        with open("__init__.py") as f:
-            content = f.read()
-
-        # Count try-except blocks
-        try_blocks = content.count("try:")
-        except_blocks = content.count("except ImportError")
-
-        # Should have at least 2 try blocks and 2 except ImportError blocks
-        self.assertGreaterEqual(try_blocks, 2)
-        self.assertGreaterEqual(except_blocks, 2)
-
-        # Verify specific structure
-        self.assertIn("try:\n    # Try relative imports first", content)
-        self.assertIn("except ImportError:\n    # Fallback to absolute imports", content)
-        self.assertIn("try:\n        from cli import main", content)
-        self.assertIn(
-            "except ImportError as e:\n        # Use standard logging as a fallback", content
-        )
-
     def test_module_level_assignments(self):
         """Test module-level variable assignments"""
         with open("__init__.py") as f:

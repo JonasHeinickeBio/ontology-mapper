@@ -34,17 +34,29 @@ def check_dependencies():
 
 
 def check_cli_module():
-    """Check if CLI module is available"""
-    cli_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "ontology_mapping", "bioportal_cli.py"
-    )
-    if os.path.exists(cli_path):
-        logger.info(f"Found CLI module: {cli_path}")
-        return True
-    else:
-        logger.error(f"CLI module not found: {cli_path}")
-        logger.error("Please ensure bioportal_cli.py is in the parent ontology_mapping folder")
-        return False
+    """Check if CLI module is available in any likely location"""
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    candidates = [
+        os.path.join(base_dir, "ontology_mapping", "bioportal_cli.py"),
+        os.path.join(base_dir, "cli", "bioportal_cli.py"),
+        os.path.join(base_dir, "bioportal_cli.py"),
+        os.path.join(base_dir, "..", "ontology_mapping", "bioportal_cli.py"),
+        os.path.join(base_dir, "..", "cli", "bioportal_cli.py"),
+    ]
+    found = False
+    for path in candidates:
+        if os.path.exists(path):
+            logger.info(f"Found CLI module: {path}")
+            found = True
+            break
+        else:
+            logger.debug(f"Checked: {path} (not found)")
+    if not found:
+        logger.error("CLI module bioportal_cli.py not found in any expected location.")
+        logger.error(
+            "Please ensure bioportal_cli.py is present in ontology_mapping/ or cli/ or project root."
+        )
+    return found
 
 
 def main():
