@@ -5,6 +5,8 @@ Simple unit tests for main.py and cli/main.py modules.
 import unittest
 from unittest.mock import Mock, patch
 
+import cli
+
 
 class TestMainSimple(unittest.TestCase):
     """Simple unit tests for main entry points"""
@@ -33,14 +35,12 @@ class TestMainSimple(unittest.TestCase):
     @patch("cli.main.get_logger")
     def test_cli_main_basic_execution(self, mock_get_logger, mock_cli_interface):
         """Test CLI main function basic execution"""
-        from cli.main import main
-
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
         mock_cli = Mock()
         mock_cli_interface.return_value = mock_cli
 
-        main()
+        cli.main()
 
         # Should create CLI interface and run it
         mock_cli_interface.assert_called_once()

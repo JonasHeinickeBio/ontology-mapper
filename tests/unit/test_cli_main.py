@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
-import cli.main
+import cli
 
 
 class TestCliMain(unittest.TestCase):
