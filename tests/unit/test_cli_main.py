@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
-from cli.main import main
+import cli.main
 
 
 class TestCliMain(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestCliMain(unittest.TestCase):
         mock_cli = Mock()
         mock_cli_interface.return_value = mock_cli
 
-        main()
+        cli.main()
 
         # Should create CLI interface and run it
         mock_cli_interface.assert_called_once()
@@ -31,7 +31,7 @@ class TestCliMain(unittest.TestCase):
         mock_cli.run.side_effect = KeyboardInterrupt("User interrupted")
         mock_cli_interface.return_value = mock_cli
 
-        main()
+        cli.main()
 
         # Should log interruption and exit with code 0
         mock_logger.info.assert_called_with("Interrupted by user. Exiting...")
@@ -47,7 +47,7 @@ class TestCliMain(unittest.TestCase):
         mock_cli.run.side_effect = test_error
         mock_cli_interface.return_value = mock_cli
 
-        main()
+        cli.main()
 
         # Should log error and exit with code 1
         mock_logger.error.assert_called_with(f"Unexpected error: {test_error}")
@@ -60,7 +60,7 @@ class TestCliMain(unittest.TestCase):
         """Test main handles CLI creation errors"""
         mock_cli_interface.side_effect = ImportError("CLI creation failed")
 
-        main()
+        cli.main()
 
         # Should exit with error code
         mock_exit.assert_called_with(1)
@@ -91,7 +91,7 @@ class TestCliMain(unittest.TestCase):
                     with patch("sys.exit") as mock_exit:
                         mock_cli.run.side_effect = exception
 
-                        main()
+                        cli.main()
 
                         mock_logger.error.assert_called()
                         mock_exit.assert_called_with(1)
@@ -106,7 +106,7 @@ class TestCliMain(unittest.TestCase):
         mock_cli.run.side_effect = Exception(test_message)
 
         with patch("sys.exit"):
-            main()
+            cli.main()
 
         # Should format error message correctly
         mock_logger.error.assert_called_with(f"Unexpected error: {test_message}")
@@ -117,7 +117,7 @@ class TestCliMain(unittest.TestCase):
         mock_cli = Mock()
         mock_cli_interface.return_value = mock_cli
 
-        main()
+        cli.main()
 
         # Should create CLI first, then run it
         mock_cli_interface.assert_called_once()
