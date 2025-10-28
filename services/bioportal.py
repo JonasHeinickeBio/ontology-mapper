@@ -7,20 +7,34 @@ import requests
 from typing import List, Dict, Optional
 
 from utils.loading import LoadingBar
+from cache import CacheManager, CacheConfig
 
 
 class BioPortalLookup:
     """Handles BioPortal API interactions"""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, cache_manager: Optional[CacheManager] = None):
         self.api_key = api_key or os.getenv('BIOPORTAL_API_KEY')
         self.base_url = "https://data.bioontology.org/search"
         
+        # Initialize cache
+        if cache_manager is None:
+            cache_config = CacheConfig()
+            self.cache = CacheManager(cache_config)
+        else:
+            self.cache = cache_manager
+        
     def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
         """Search BioPortal for concepts with enhanced metadata"""
+        # Check cache first
+        cached_results = self.cache.get(query, ontologies, 'bioportal')
+        if cached_results is not None:
+            print(f"💾 Using cached BioPortal results for '{query}'")
+            return cached_results
+        
         if not self.api_key or self.api_key == 'your_api_key_here':
             # Demo mode
-            return [{
+            demo_results = [{
                 'uri': f"http://demo.org/{query.replace(' ', '_')}",
                 'label': f"Demo: {query}",
                 'ontology': "DEMO",
@@ -28,6 +42,9 @@ class BioPortalLookup:
                 'synonyms': [f"Demo synonym for {query}"],
                 'source': 'bioportal_demo'
             }]
+            # Cache demo results
+            self.cache.set(query, ontologies, 'bioportal', demo_results)
+            return demo_results
         
         params = {
             "q": query,
@@ -71,6 +88,9 @@ class BioPortalLookup:
                     'synonyms': synonyms,
                     'source': 'bioportal'
                 })
+            
+            # Cache the results
+            self.cache.set(query, ontologies, 'bioportal', results)
             return results
         except Exception as e:
             loading_bar.stop()

@@ -11,6 +11,7 @@ from typing import Dict, List
 from services import BioPortalLookup, OLSLookup
 from core import OntologyParser, ConceptLookup, OntologyGenerator
 from config import ONTOLOGY_CONFIGS, ONTOLOGY_COMBINATIONS
+from cache import CacheManager, CacheConfig
 
 
 class CLIInterface:
@@ -61,6 +62,14 @@ Examples:
         parser.add_argument('--terminal-only', action='store_true',
                           help='Only print results to terminal, do not generate output files')
         
+        # Cache management arguments
+        parser.add_argument('--clear-cache', action='store_true',
+                          help='Clear all cached API responses')
+        parser.add_argument('--cache-stats', action='store_true',
+                          help='Show cache statistics')
+        parser.add_argument('--no-cache', action='store_true',
+                          help='Disable cache for this run')
+        
         return parser
     
     def _list_available_ontologies(self):
@@ -92,6 +101,22 @@ Examples:
             self._list_available_ontologies()
             return
         
+        # Initialize cache
+        cache_config = CacheConfig()
+        if args.no_cache:
+            cache_config.enabled = False
+        cache = CacheManager(cache_config)
+        
+        # Handle cache commands
+        if args.clear_cache:
+            count = cache.clear()
+            print(f"🗑️  Cleared {count} cached entries")
+            return
+        
+        if args.cache_stats:
+            self._show_cache_stats(cache)
+            return
+        
         # Validate arguments
         if not args.single_word and not args.ttl_file:
             print("❌ Error: Either provide a TTL file or use --single-word option")
@@ -105,9 +130,15 @@ Examples:
         print(f"\n🔧 BioPortal & OLS Ontology Alignment CLI")
         print("=" * 45)
         
-        # Initialize components
-        bioportal = BioPortalLookup(args.api_key)
-        ols = OLSLookup()
+        # Show cache status
+        if cache_config.enabled:
+            print(f"💾 Cache: Enabled (TTL: {cache_config.ttl}s, Persistent: {cache_config.persistent})")
+        else:
+            print(f"💾 Cache: Disabled")
+        
+        # Initialize components with shared cache
+        bioportal = BioPortalLookup(args.api_key, cache)
+        ols = OLSLookup(cache)
         lookup = ConceptLookup(bioportal, ols, args.ontologies)
         generator = OntologyGenerator()
         
@@ -119,7 +150,7 @@ Examples:
         
         # Handle single word mode
         if args.single_word:
-            self._single_word_mode(args, lookup, generator)
+            self._single_word_mode(args, lookup, generator, cache, cache_config)
             return
         
         # Original TTL processing mode
@@ -162,8 +193,28 @@ Examples:
                 generator.generate_improved_ontology(ontology, selections, args.output, args.report)
         else:
             print("❌ No selections made. Exiting.")
+        
+        # Show cache stats at the end
+        if cache_config.enabled:
+            self._show_cache_stats(cache)
 
-    def _single_word_mode(self, args, lookup: ConceptLookup, generator: OntologyGenerator):
+    def _show_cache_stats(self, cache: CacheManager):
+        """Display cache statistics"""
+        stats = cache.get_stats()
+        print(f"\n📊 Cache Statistics")
+        print("=" * 45)
+        print(f"Status: {'Enabled' if stats['enabled'] else 'Disabled'}")
+        print(f"Hit Rate: {stats['hit_rate']} ({stats['hits']} hits, {stats['misses']} misses)")
+        print(f"Memory Entries: {stats['memory_entries']}")
+        print(f"Persistent Cache: {'Enabled' if stats['persistent_enabled'] else 'Disabled'}")
+        print(f"TTL: {stats['ttl_seconds']}s")
+        print(f"Operations: {stats['sets']} sets, {stats['deletes']} deletes")
+        if stats['errors'] > 0:
+            print(f"⚠️  Errors: {stats['errors']}")
+        print()
+        
+    def _single_word_mode(self, args, lookup: ConceptLookup, generator: OntologyGenerator, 
+                          cache: CacheManager, cache_config):
         """Handle single word query mode"""
         print(f"\n🔍 Single Word Query Mode")
         print(f"Query: '{args.single_word}'")
@@ -267,6 +318,11 @@ Examples:
                                 print(f"      Description: {sel['description'][:100]}...")
                     else:
                         generator.generate_single_word_ontology(concept, selections, args.output, args.report)
+                    
+                    # Show cache stats at the end
+                    if cache_config.enabled:
+                        self._show_cache_stats(cache)
+                    
                     break
                 else:
                     print("❌ No valid selections. Try again.")
