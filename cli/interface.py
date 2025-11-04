@@ -36,7 +36,7 @@ Examples:
         )
         
         # Make ttl_file optional when using single-word mode
-        parser.add_argument('ttl_file', nargs='?', help='Path to TTL ontology file (optional with --single-word)')
+        parser.add_argument('ttl_file', nargs='?', help='Path to ontology file in RDF format (optional with --single-word)')
         parser.add_argument('--output', '-o', default='improved_ontology.ttl',
                           help='Output file for improved ontology (default: improved_ontology.ttl)')
         parser.add_argument('--api-key', help='BioPortal API key (or set BIOPORTAL_API_KEY env var)')
@@ -54,7 +54,7 @@ Examples:
         parser.add_argument('--ontologies', '-ont', 
                           help='Comma-separated list of ontologies to search (e.g., HP,NCIT,MONDO)')
         parser.add_argument('--single-word', '-sw',
-                          help='Query a single word/term instead of processing a TTL file')
+                          help='Query a single word/term instead of processing an ontology file')
         parser.add_argument('--list-ontologies', action='store_true',
                           help='Show available ontologies and exit')
         parser.add_argument('--max-results', type=int, default=5,
@@ -62,11 +62,15 @@ Examples:
         parser.add_argument('--terminal-only', action='store_true',
                           help='Only print results to terminal, do not generate output files')
         
-        # Output format arguments
+        # Format arguments
+        parser.add_argument('--input-format', '--if',
+                          help='Input format: turtle/ttl (default), json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads (auto-detected from extension if not specified)')
         parser.add_argument('--format', '-f',
                           help='Output format: turtle/ttl (default), json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads, csv, tsv, sssom')
         parser.add_argument('--list-formats', action='store_true',
-                          help='Show available output formats and exit')
+                          help='Show available input and output formats and exit')
+        parser.add_argument('--list-input-formats', action='store_true',
+                          help='Show available input formats and exit')
         
         # Cache management arguments
         parser.add_argument('--clear-cache', action='store_true',
@@ -98,32 +102,60 @@ Examples:
         print("  --ontologies 'GO,PRO'            # Gene/protein related")
         print("\n")
     
-    def _list_available_formats(self):
-        """Display available output formats and their descriptions"""
-        from core.generator import OntologyGenerator
+    def _list_available_input_formats(self):
+        """Display available input formats and their descriptions"""
+        from core.parser import OntologyParser
         
-        print("\n📄 Available Output Formats")
+        print("\n📥 Available Input Formats")
         print("=" * 50)
         
         print("\n📊 RDF Formats (via rdflib):")
+        descriptions = OntologyParser.get_input_format_descriptions()
+        for fmt in sorted(descriptions.keys()):
+            print(f"  {fmt:12s} - {descriptions[fmt]}")
+        
+        print("\n💡 Usage Examples:")
+        print("  --input-format json-ld           # Parse JSON-LD input")
+        print("  --input-format xml               # Parse RDF/XML input")
+        print("  python main.py ontology.jsonld   # Auto-detect from extension")
+        print("  python main.py data.rdf          # Auto-detect .rdf as RDF/XML")
+        print("\n")
+    
+    def _list_available_formats(self):
+        """Display available input and output formats and their descriptions"""
+        from core.generator import OntologyGenerator
+        from core.parser import OntologyParser
+        
+        print("\n📄 Available Input and Output Formats")
+        print("=" * 50)
+        
+        print("\n📥 INPUT FORMATS (RDF formats via rdflib):")
+        input_descriptions = OntologyParser.get_input_format_descriptions()
+        for fmt in sorted(input_descriptions.keys()):
+            print(f"  {fmt:12s} - {input_descriptions[fmt]}")
+        
+        print("\n📤 OUTPUT FORMATS")
+        print("\n📊 RDF Formats (via rdflib):")
         rdf_formats = ['turtle', 'json-ld', 'xml', 'nt', 'n3', 'trig', 'nquads']
-        descriptions = OntologyGenerator.get_format_descriptions()
+        output_descriptions = OntologyGenerator.get_format_descriptions()
         for fmt in rdf_formats:
-            if fmt in descriptions:
-                print(f"  {fmt:12s} - {descriptions[fmt]}")
+            if fmt in output_descriptions:
+                print(f"  {fmt:12s} - {output_descriptions[fmt]}")
         
         print("\n📋 Tabular Formats (custom export):")
         tabular_formats = ['csv', 'tsv', 'sssom']
         for fmt in tabular_formats:
-            if fmt in descriptions:
-                print(f"  {fmt:12s} - {descriptions[fmt]}")
+            if fmt in output_descriptions:
+                print(f"  {fmt:12s} - {output_descriptions[fmt]}")
         
         print("\n💡 Usage Examples:")
-        print("  --format json-ld                 # Export as JSON-LD")
-        print("  --format xml                     # Export as RDF/XML")
-        print("  --format nt                      # Export as N-Triples")
-        print("  --format sssom                   # Export as SSSOM mapping")
-        print("  --output result.jsonld           # Auto-detect from extension")
+        print("  # Input format")
+        print("  python main.py data.jsonld --input-format json-ld")
+        print("  python main.py ontology.rdf        # Auto-detect input format")
+        print()
+        print("  # Output format")
+        print("  python main.py data.ttl --format json-ld --output result.jsonld")
+        print("  python main.py data.jsonld --format sssom --output mappings.sssom.tsv")
         print("\n")
 
     def run(self):
@@ -135,7 +167,12 @@ Examples:
             self._list_available_ontologies()
             return
         
-        # Handle list formats
+        # Handle list input formats
+        if args.list_input_formats:
+            self._list_available_input_formats()
+            return
+        
+        # Handle list formats (both input and output)
         if args.list_formats:
             self._list_available_formats()
             return
@@ -192,8 +229,8 @@ Examples:
             self._single_word_mode(args, lookup, generator, cache, cache_config)
             return
         
-        # Original TTL processing mode
-        ontology = OntologyParser(args.ttl_file)
+        # Ontology file processing mode
+        ontology = OntologyParser(args.ttl_file, args.input_format)
         
         # Parse ontology
         if not ontology.parse():
