@@ -23,6 +23,7 @@ SUPPORTED_FORMATS = {
     'json-ld': 'json-ld',
     'jsonld': 'json-ld',
     'xml': 'xml',
+    'rdf': 'xml',  # .rdf files use RDF/XML
     'rdf-xml': 'xml',
     'rdfxml': 'xml',
     'nt': 'nt',
@@ -117,6 +118,26 @@ class OntologyGenerator:
                 obj_type = 'URI' if isinstance(o, URIRef) else 'Literal'
                 writer.writerow([str(s), str(p), str(o), obj_type])
     
+    def _get_entity_label(self, uri: URIRef, graph: Graph) -> Optional[str]:
+        """Extract label for an entity from the graph
+        
+        Args:
+            uri: The URI of the entity
+            graph: The RDF graph to search
+            
+        Returns:
+            Label string if found, None otherwise
+        """
+        # Try SKOS prefLabel first (more specific)
+        for _, _, label in graph.triples((uri, SKOS.prefLabel, None)):
+            return str(label)
+        
+        # Fall back to RDFS label
+        for _, _, label in graph.triples((uri, RDFS.label, None)):
+            return str(label)
+        
+        return None
+    
     def _serialize_sssom(self, graph: Graph, output_file: str):
         """Serialize graph to SSSOM (Simple Standard for Sharing Ontology Mappings) format"""
         mappings = []
@@ -140,25 +161,9 @@ class OntologyGenerator:
                     else:
                         predicate_id = 'rdfs:seeAlso'
                     
-                    # Get labels if available
-                    subject_label = None
-                    object_label = None
-                    
-                    # Get subject label
-                    for _, pred, obj in graph.triples((s, RDFS.label, None)):
-                        subject_label = str(obj)
-                        break
-                    for _, pred, obj in graph.triples((s, SKOS.prefLabel, None)):
-                        subject_label = str(obj)
-                        break
-                    
-                    # Get object label (from external URI if available in graph)
-                    for _, pred, obj_lbl in graph.triples((o, RDFS.label, None)):
-                        object_label = str(obj_lbl)
-                        break
-                    for _, pred, obj_lbl in graph.triples((o, SKOS.prefLabel, None)):
-                        object_label = str(obj_lbl)
-                        break
+                    # Get labels using helper method
+                    subject_label = self._get_entity_label(s, graph)
+                    object_label = self._get_entity_label(o, graph)
                     
                     mappings.append({
                         'subject_id': str(s),

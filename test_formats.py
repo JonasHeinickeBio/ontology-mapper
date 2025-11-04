@@ -186,7 +186,7 @@ def test_format_detection():
     test_cases = [
         ('output.ttl', 'turtle'),
         ('output.jsonld', 'json-ld'),
-        ('output.rdf', None),  # .rdf not mapped
+        ('output.rdf', 'xml'),  # .rdf maps to xml (RDF/XML)
         ('output.xml', 'xml'),
         ('output.nt', 'nt'),
         ('output.csv', 'csv'),

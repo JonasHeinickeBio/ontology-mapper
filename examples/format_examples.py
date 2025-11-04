@@ -120,7 +120,7 @@ def example_2_format_detection():
     test_files = [
         'hypertension.ttl',       # Will use turtle
         'hypertension.jsonld',    # Will use json-ld
-        'hypertension.rdf',       # Will default to turtle (no .rdf mapping)
+        'hypertension.rdf',       # Will use xml (RDF/XML)
         'hypertension.nt',        # Will use nt
         'hypertension.csv',       # Will use csv
     ]

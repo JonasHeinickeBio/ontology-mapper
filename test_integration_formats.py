@@ -224,7 +224,7 @@ def test_format_auto_detection():
     test_cases = [
         ('output.ttl', 'turtle'),
         ('output.jsonld', 'json-ld'),
-        ('output.rdf', None),  # Will use turtle as default
+        ('output.rdf', 'xml'),  # .rdf extension maps to RDF/XML
         ('output.nt', 'nt'),
         ('output.csv', 'csv'),
         ('output.sssom', 'sssom'),
