@@ -62,6 +62,12 @@ Examples:
         parser.add_argument('--terminal-only', action='store_true',
                           help='Only print results to terminal, do not generate output files')
         
+        # Output format arguments
+        parser.add_argument('--format', '-f',
+                          help='Output format: turtle/ttl (default), json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads, csv, tsv, sssom')
+        parser.add_argument('--list-formats', action='store_true',
+                          help='Show available output formats and exit')
+        
         # Cache management arguments
         parser.add_argument('--clear-cache', action='store_true',
                           help='Clear all cached API responses')
@@ -91,6 +97,34 @@ Examples:
         print("  --ontologies 'CHEBI,RXNORM'      # Chemical and drug terms")
         print("  --ontologies 'GO,PRO'            # Gene/protein related")
         print("\n")
+    
+    def _list_available_formats(self):
+        """Display available output formats and their descriptions"""
+        from core.generator import OntologyGenerator
+        
+        print("\n📄 Available Output Formats")
+        print("=" * 50)
+        
+        print("\n📊 RDF Formats (via rdflib):")
+        rdf_formats = ['turtle', 'json-ld', 'xml', 'nt', 'n3', 'trig', 'nquads']
+        descriptions = OntologyGenerator.get_format_descriptions()
+        for fmt in rdf_formats:
+            if fmt in descriptions:
+                print(f"  {fmt:12s} - {descriptions[fmt]}")
+        
+        print("\n📋 Tabular Formats (custom export):")
+        tabular_formats = ['csv', 'tsv', 'sssom']
+        for fmt in tabular_formats:
+            if fmt in descriptions:
+                print(f"  {fmt:12s} - {descriptions[fmt]}")
+        
+        print("\n💡 Usage Examples:")
+        print("  --format json-ld                 # Export as JSON-LD")
+        print("  --format xml                     # Export as RDF/XML")
+        print("  --format nt                      # Export as N-Triples")
+        print("  --format sssom                   # Export as SSSOM mapping")
+        print("  --output result.jsonld           # Auto-detect from extension")
+        print("\n")
 
     def run(self):
         """Main CLI entry point"""
@@ -99,6 +133,11 @@ Examples:
         # Handle list ontologies
         if args.list_ontologies:
             self._list_available_ontologies()
+            return
+        
+        # Handle list formats
+        if args.list_formats:
+            self._list_available_formats()
             return
         
         # Initialize cache
@@ -190,7 +229,7 @@ Examples:
                         if alignment.get('description'):
                             print(f"      Description: {alignment['description'][:100]}...")
             else:
-                generator.generate_improved_ontology(ontology, selections, args.output, args.report)
+                generator.generate_improved_ontology(ontology, selections, args.output, args.report, args.format)
         else:
             print("❌ No selections made. Exiting.")
         
@@ -317,7 +356,7 @@ Examples:
                             if sel.get('description'):
                                 print(f"      Description: {sel['description'][:100]}...")
                     else:
-                        generator.generate_single_word_ontology(concept, selections, args.output, args.report)
+                        generator.generate_single_word_ontology(concept, selections, args.output, args.report, args.format)
                     
                     # Show cache stats at the end
                     if cache_config.enabled:
