@@ -286,6 +286,7 @@ class BioPortalGUI:
         self.api_key = tk.StringVar()
         self.output_file = tk.StringVar(value="improved_ontology.ttl")
         self.report_file = tk.StringVar(value="alignment_report.json")
+        self.output_format = tk.StringVar(value="turtle")  # Default format
         
         # Service options
         self.use_bioportal = tk.BooleanVar(value=True)
@@ -410,6 +411,20 @@ class BioPortalGUI:
         ttk.Label(output_frame, text="Output Ontology File:").pack(anchor=tk.W, padx=5, pady=2)
         ttk.Entry(output_frame, textvariable=self.output_file, width=60).pack(anchor=tk.W, padx=5, pady=2)
         
+        # Format selection
+        format_frame = ttk.Frame(output_frame)
+        format_frame.pack(fill=tk.X, padx=5, pady=2)
+        
+        ttk.Label(format_frame, text="Output Format:").pack(side=tk.LEFT, padx=(0, 5))
+        format_options = ['turtle', 'json-ld', 'xml', 'nt', 'n3', 'trig', 'nquads', 'csv', 'tsv', 'sssom']
+        format_combo = ttk.Combobox(format_frame, textvariable=self.output_format, 
+                                    values=format_options, state='readonly', width=15)
+        format_combo.pack(side=tk.LEFT, padx=(0, 5))
+        format_combo.bind('<<ComboboxSelected>>', self.on_format_change)
+        
+        ttk.Label(format_frame, text="(Auto-detect from filename or select manually)", 
+                 font=("Arial", 8), foreground="gray").pack(side=tk.LEFT, padx=5)
+        
         ttk.Label(output_frame, text="Alignment Report File:").pack(anchor=tk.W, padx=5, pady=2)
         ttk.Entry(output_frame, textvariable=self.report_file, width=60).pack(anchor=tk.W, padx=5, pady=2)
         
@@ -488,6 +503,34 @@ class BioPortalGUI:
         ttk.Button(results_action_frame, text="View Ontology", command=self.view_ontology).pack(side=tk.LEFT, padx=5)
         ttk.Button(results_action_frame, text="Export Report", command=self.export_report).pack(side=tk.RIGHT, padx=5)
         
+    def on_format_change(self, event=None):
+        """Handle format selection change and update output filename"""
+        format_name = self.output_format.get()
+        current_output = self.output_file.get()
+        
+        # Get the base filename without extension
+        base_name = os.path.splitext(current_output)[0]
+        
+        # Map format to common file extension
+        format_extensions = {
+            'turtle': '.ttl',
+            'json-ld': '.jsonld',
+            'xml': '.rdf',
+            'nt': '.nt',
+            'n3': '.n3',
+            'trig': '.trig',
+            'nquads': '.nq',
+            'csv': '.csv',
+            'tsv': '.tsv',
+            'sssom': '.sssom.tsv'
+        }
+        
+        new_extension = format_extensions.get(format_name, '.ttl')
+        new_filename = base_name + new_extension
+        
+        self.output_file.set(new_filename)
+        self.log(f"Output format changed to: {format_name}")
+    
     def browse_ttl_file(self):
         """Browse for TTL file"""
         filename = filedialog.askopenfilename(
@@ -839,15 +882,23 @@ class BioPortalGUI:
             improved_graph.add((tool_agent, DCTERMS.title, Literal("BioPortal GUI Alignment Tool", lang='en')))
             improved_graph.add((tool_agent, URIRef("http://www.w3.org/ns/prov#wasAssociatedWith"), prov_activity))
             
-            # Save improved ontology
+            # Save improved ontology using selected format
             output_path = self.output_file.get()
-            improved_graph.serialize(destination=output_path, format='turtle')
+            format_name = self.output_format.get()
+            
+            # Import and use OntologyGenerator for serialization
+            from core.generator import OntologyGenerator
+            generator = OntologyGenerator()
+            generator._serialize_graph(improved_graph, output_path, format_name)
+            
+            self.log(f"  Saved as {format_name} format")
             
             # Generate report
             report = {
                 'timestamp': datetime.now().isoformat(),
                 'input_file': self.ttl_file.get(),
                 'output_file': output_path,
+                'output_format': format_name,
                 'original_triples': len(ontology.graph),
                 'improved_triples': len(improved_graph),
                 'alignments_added': total_alignments,
