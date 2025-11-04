@@ -143,11 +143,21 @@ class OntologyGenerator:
                     # Get labels if available
                     subject_label = None
                     object_label = None
+                    
+                    # Get subject label
                     for _, pred, obj in graph.triples((s, RDFS.label, None)):
                         subject_label = str(obj)
                         break
                     for _, pred, obj in graph.triples((s, SKOS.prefLabel, None)):
                         subject_label = str(obj)
+                        break
+                    
+                    # Get object label (from external URI if available in graph)
+                    for _, pred, obj_lbl in graph.triples((o, RDFS.label, None)):
+                        object_label = str(obj_lbl)
+                        break
+                    for _, pred, obj_lbl in graph.triples((o, SKOS.prefLabel, None)):
+                        object_label = str(obj_lbl)
                         break
                     
                     mappings.append({
@@ -169,6 +179,21 @@ class OntologyGenerator:
             writer.writeheader()
             writer.writerows(mappings)
     
+    def _determine_output_format(self, output_file: str, output_format: Optional[str]) -> str:
+        """Determine the output format from explicit format parameter or filename
+        
+        Args:
+            output_file: Path to output file
+            output_format: Optional explicit format specification
+            
+        Returns:
+            Normalized format name
+        """
+        if output_format:
+            return self._normalize_format(output_format)
+        else:
+            return self._detect_format_from_filename(output_file) or 'turtle'
+    
     def generate_improved_ontology(self, ontology: OntologyParser, selections: Dict, 
                                   output_file: str, report_file: Optional[str] = None,
                                   output_format: Optional[str] = None):
@@ -183,10 +208,7 @@ class OntologyGenerator:
                           If None, auto-detect from filename or use turtle
         """
         # Determine output format
-        if output_format:
-            format_name = self._normalize_format(output_format)
-        else:
-            format_name = self._detect_format_from_filename(output_file) or 'turtle'
+        format_name = self._determine_output_format(output_file, output_format)
         
         print(f"\n💾 Generating Improved Ontology ({format_name})")
         print("=" * 35)
@@ -344,10 +366,7 @@ class OntologyGenerator:
                           If None, auto-detect from filename or use turtle
         """
         # Determine output format
-        if output_format:
-            format_name = self._normalize_format(output_format)
-        else:
-            format_name = self._detect_format_from_filename(output_file) or 'turtle'
+        format_name = self._determine_output_format(output_file, output_format)
         
         print(f"\n💾 Generating Ontology for Single Word Query ({format_name})")
         print("=" * 45)

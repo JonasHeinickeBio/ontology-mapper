@@ -68,7 +68,7 @@ test_cases = [
 
 all_passed = True
 for input_file, format_name, expected_output in test_cases:
-    gui.output_file.get = lambda: input_file
+    gui.output_file.get = lambda file=input_file: file
     gui.output_format.get = lambda f=format_name: f
     
     result = gui.on_format_change()
