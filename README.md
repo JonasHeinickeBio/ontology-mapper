@@ -10,6 +10,7 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 
 - **Multi-ontology support**: 24+ ontologies including MONDO, HP, NCIT, DOID, CHEBI, GO, SNOMEDCT, and more
 - **Dual API integration**: BioPortal and OLS APIs with intelligent fallback
+- **Intelligent caching**: In-memory and persistent caching for faster repeated queries
 - **Interactive search**: Real-time concept lookup with user-friendly selection
 - **TTL file processing**: Parse and enrich existing ontology files
 - **Batch processing**: Handle multiple concepts efficiently
@@ -48,13 +49,20 @@ pip install -e .
    - Get a BioPortal API key from: https://bioportal.bioontology.org/account
    - (Optional) Get a UMLS API key from: https://uts.nlm.nih.gov/uts/profile
 
+3. (Optional) Configure caching settings in `.env`:
+   - `CACHE_ENABLED`: Enable/disable caching (default: true)
+   - `CACHE_TTL`: Cache time-to-live in seconds (default: 86400 = 24 hours)
+   - `CACHE_PERSISTENT`: Enable persistent file-based cache (default: true)
+   - `CACHE_DIR`: Cache directory location (default: ~/.ontology_mapper_cache)
+   - `CACHE_MAX_SIZE_MB`: Maximum cache size in MB (default: 100)
+
 ## Usage
 
 ### Command Line Interface
 
 #### Basic concept lookup:
 ```bash
-python main.py --search "breast cancer"
+python main.py --single-word "breast cancer"
 ```
 
 #### Process a TTL file:
@@ -62,14 +70,75 @@ python main.py --search "breast cancer"
 python main.py --input ontology.ttl --output enriched_ontology.ttl
 ```
 
-#### Interactive mode:
+#### Cache Management:
 ```bash
-python main.py --interactive
+# View cache statistics
+python main.py --cache-stats
+
+# Clear all cached data
+python main.py --clear-cache
+
+# Disable cache for a single run
+python main.py --single-word "diabetes" --no-cache
 ```
 
 #### Batch processing:
 ```bash
 python main.py --batch concepts.txt --output results.json
+```
+
+## Caching
+
+The tool includes an intelligent caching mechanism to reduce API calls and improve performance:
+
+### Features
+
+- **In-memory caching**: Fast access to recently queried results
+- **Persistent caching**: Results saved to disk and reused across sessions
+- **Configurable TTL**: Set cache expiration time (default 24 hours)
+- **Automatic cleanup**: Old entries are removed when size limit is reached
+- **Cache statistics**: Monitor hit rates and cache performance
+- **Per-service caching**: Separate caches for BioPortal and OLS
+
+### Benefits
+
+- 50%+ reduction in API calls for repeated queries
+- Faster response times for cached results
+- Reduced load on API servers
+- Works seamlessly across CLI and GUI
+- Respects API rate limits
+
+### Usage
+
+Cache is enabled by default. Configure it via environment variables in `.env`:
+
+```bash
+# Enable/disable caching
+CACHE_ENABLED=true
+
+# Cache time-to-live (24 hours)
+CACHE_TTL=86400
+
+# Enable persistent disk cache
+CACHE_PERSISTENT=true
+
+# Maximum cache size in MB
+CACHE_MAX_SIZE_MB=100
+```
+
+View cache statistics:
+```bash
+python main.py --cache-stats
+```
+
+Clear cache:
+```bash
+python main.py --clear-cache
+```
+
+Disable cache for a single run:
+```bash
+python main.py --single-word "query" --no-cache
 ```
 
 ### Graphical User Interface

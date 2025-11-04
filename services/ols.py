@@ -3,20 +3,34 @@ OLS API client for ontology lookups.
 """
 
 import requests
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from utils.loading import LoadingBar
 from config import BIOPORTAL_TO_OLS_MAPPING
+from cache import CacheManager, CacheConfig
 
 
 class OLSLookup:
     """Handles OLS (Ontology Lookup Service) API interactions"""
     
-    def __init__(self):
+    def __init__(self, cache_manager: Optional[CacheManager] = None):
         self.base_url = "https://www.ebi.ac.uk/ols/api/search"
+        
+        # Initialize cache
+        if cache_manager is None:
+            cache_config = CacheConfig()
+            self.cache = CacheManager(cache_config)
+        else:
+            self.cache = cache_manager
         
     def search(self, query: str, ontologies: str = "", max_results: int = 5) -> List[Dict]:
         """Search OLS for concepts with enhanced metadata"""
+        # Check cache first
+        cached_results = self.cache.get(query, ontologies, 'ols')
+        if cached_results is not None:
+            print(f"💾 Using cached OLS results for '{query}'")
+            return cached_results
+        
         params = {
             "q": query,
             "rows": max_results,
@@ -58,6 +72,9 @@ class OLSLookup:
                     'synonyms': synonyms,
                     'source': 'ols'
                 })
+            
+            # Cache the results
+            self.cache.set(query, ontologies, 'ols', results)
             return results
         except Exception as e:
             loading_bar.stop()

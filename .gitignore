@@ -156,3 +156,6 @@ results/
 # Temporary files
 tmp/
 temp/
+
+# Cache directory
+.ontology_mapper_cache/
