@@ -9,7 +9,7 @@ import argparse
 from typing import Dict, List
 
 from services import BioPortalLookup, OLSLookup
-from core import OntologyParser, ConceptLookup, OntologyGenerator
+from core import OntologyParser, SchemaParser, ConceptLookup, OntologyGenerator
 from config import ONTOLOGY_CONFIGS, ONTOLOGY_COMBINATIONS
 from cache import CacheManager, CacheConfig
 
@@ -36,7 +36,7 @@ Examples:
         )
         
         # Make ttl_file optional when using single-word mode
-        parser.add_argument('ttl_file', nargs='?', help='Path to ontology file in RDF format (optional with --single-word)')
+        parser.add_argument('ttl_file', nargs='?', help='Path to ontology/schema file (RDF, YAML, JSON, or Markdown)')
         parser.add_argument('--output', '-o', default='improved_ontology.ttl',
                           help='Output file for improved ontology (default: improved_ontology.ttl)')
         parser.add_argument('--api-key', help='BioPortal API key (or set BIOPORTAL_API_KEY env var)')
@@ -64,13 +64,15 @@ Examples:
         
         # Format arguments
         parser.add_argument('--input-format', '--if',
-                          help='Input format: turtle/ttl (default), json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads (auto-detected from extension if not specified)')
+                          help='Input format: turtle/ttl, json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads, yaml, json, markdown (auto-detected from extension if not specified)')
         parser.add_argument('--format', '-f',
                           help='Output format: turtle/ttl (default), json-ld, xml/rdf-xml, nt/ntriples, n3, trig, nquads, csv, tsv, sssom')
         parser.add_argument('--list-formats', action='store_true',
                           help='Show available input and output formats and exit')
         parser.add_argument('--list-input-formats', action='store_true',
                           help='Show available input formats and exit')
+        parser.add_argument('--schema-mode', action='store_true',
+                          help='Parse as schema file (YAML/JSON/Markdown) with ontology mappings instead of RDF')
         
         # Cache management arguments
         parser.add_argument('--clear-cache', action='store_true',
@@ -114,11 +116,17 @@ Examples:
         for fmt in sorted(descriptions.keys()):
             print(f"  {fmt:12s} - {descriptions[fmt]}")
         
+        print("\n📋 Schema Formats (with ontology_mappings):")
+        print(f"  yaml         - YAML schema files with ontology mappings")
+        print(f"  json         - JSON schema files with ontology mappings")
+        print(f"  markdown     - Markdown documentation with ontology mappings")
+        
         print("\n💡 Usage Examples:")
-        print("  --input-format json-ld           # Parse JSON-LD input")
+        print("  --input-format json-ld           # Parse JSON-LD RDF input")
         print("  --input-format xml               # Parse RDF/XML input")
-        print("  python main.py ontology.jsonld   # Auto-detect from extension")
-        print("  python main.py data.rdf          # Auto-detect .rdf as RDF/XML")
+        print("  --input-format yaml --schema-mode  # Parse YAML schema")
+        print("  python main.py schema.yaml --schema-mode")
+        print("  python main.py ontology.jsonld   # Auto-detect RDF format")
         print("\n")
     
     def _list_available_formats(self):
@@ -129,10 +137,16 @@ Examples:
         print("\n📄 Available Input and Output Formats")
         print("=" * 50)
         
-        print("\n📥 INPUT FORMATS (RDF formats via rdflib):")
+        print("\n📥 INPUT FORMATS")
+        print("\nRDF Formats (via rdflib):")
         input_descriptions = OntologyParser.get_input_format_descriptions()
         for fmt in sorted(input_descriptions.keys()):
             print(f"  {fmt:12s} - {input_descriptions[fmt]}")
+        
+        print("\nSchema Formats (with ontology_mappings):")
+        print(f"  yaml         - YAML schema files")
+        print(f"  json         - JSON schema files")
+        print(f"  markdown     - Markdown documentation")
         
         print("\n📤 OUTPUT FORMATS")
         print("\n📊 RDF Formats (via rdflib):")
@@ -229,20 +243,53 @@ Examples:
             self._single_word_mode(args, lookup, generator, cache, cache_config)
             return
         
-        # Ontology file processing mode
-        ontology = OntologyParser(args.ttl_file, args.input_format)
+        # Determine if we're in schema mode
+        schema_mode = args.schema_mode or (args.input_format and args.input_format.lower() in ['yaml', 'json', 'markdown', 'md'])
         
-        # Parse ontology
-        if not ontology.parse():
-            sys.exit(1)
-        
-        # Get concepts to improve
-        concepts = ontology.get_priority_concepts()
-        if not concepts:
-            print("❌ No priority concepts found in ontology")
-            sys.exit(1)
-        
-        print(f"\n🎯 Found {len(concepts)} priority concepts to improve")
+        if schema_mode:
+            # Schema file processing mode
+            print("\n📋 Schema File Processing Mode")
+            schema_parser = SchemaParser(args.ttl_file, args.input_format)
+            
+            # Parse schema
+            if not schema_parser.parse():
+                sys.exit(1)
+            
+            # Get concepts that have ontology mappings
+            concepts = schema_parser.get_concepts_for_mapping()
+            if not concepts:
+                print("❌ No classes with ontology mappings found in schema")
+                sys.exit(1)
+            
+            print(f"\n🎯 Found {len(concepts)} classes with ontology mappings to validate/enhance")
+            
+            # Show existing mappings for each concept
+            for concept in concepts:
+                print(f"\n📌 {concept['label']}:")
+                print(f"   Definition: {concept['definition'][:100]}..." if len(concept['definition']) > 100 else f"   Definition: {concept['definition']}")
+                print(f"   Existing mappings: {len(concept['existing_mappings'])}")
+                for mapping in concept['existing_mappings']:
+                    curie = mapping.get('curie', '')
+                    iri = mapping.get('iri', '')
+                    if curie:
+                        print(f"     - {curie} ({iri})")
+                    else:
+                        print(f"     - {iri}")
+        else:
+            # RDF ontology file processing mode
+            ontology = OntologyParser(args.ttl_file, args.input_format)
+            
+            # Parse ontology
+            if not ontology.parse():
+                sys.exit(1)
+            
+            # Get concepts to improve
+            concepts = ontology.get_priority_concepts()
+            if not concepts:
+                print("❌ No priority concepts found in ontology")
+                sys.exit(1)
+            
+            print(f"\n🎯 Found {len(concepts)} priority concepts to improve")
         
         # Handle batch mode
         if args.batch_mode:
@@ -266,7 +313,13 @@ Examples:
                         if alignment.get('description'):
                             print(f"      Description: {alignment['description'][:100]}...")
             else:
-                generator.generate_improved_ontology(ontology, selections, args.output, args.report, args.format)
+                if schema_mode:
+                    # For schema mode, convert to RDF graph first
+                    print("\n📊 Converting schema to RDF graph...")
+                    schema_graph_wrapper = type('obj', (object,), {'graph': schema_parser.to_rdf_graph(), 'ttl_file': args.ttl_file})()
+                    generator.generate_improved_ontology(schema_graph_wrapper, selections, args.output, args.report, args.format)
+                else:
+                    generator.generate_improved_ontology(ontology, selections, args.output, args.report, args.format)
         else:
             print("❌ No selections made. Exiting.")
         
