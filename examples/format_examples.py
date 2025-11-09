@@ -13,8 +13,6 @@ import tempfile
 # Add the project root to Python path
 sys.path.insert(0, os.path.abspath('.'))
 
-from rdflib import Graph, RDF, RDFS, OWL, SKOS, URIRef, Literal
-from rdflib.namespace import DCTERMS
 from core.generator import OntologyGenerator
 
 
@@ -78,11 +76,12 @@ def example_1_simple_format_export():
             # Show first few lines of the output
             print(f"\n   Preview of {output_file}:")
             with open(output_file, 'r') as f:
-                lines = f.readlines()[:10]  # First 10 lines
-                for line in lines:
+                all_lines = f.readlines()
+                preview_lines = all_lines[:10]
+                for line in preview_lines:
                     print(f"   {line.rstrip()}")
-                if len(lines) >= 10:
-                    print(f"   ... ({len(lines)} more lines)")
+                if len(all_lines) > 10:
+                    print(f"   ... ({len(all_lines) - 10} more lines)")
             
         finally:
             if os.path.exists(output_file):

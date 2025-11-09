@@ -8,13 +8,11 @@ Tests the complete workflow from creation to serialization in various formats.
 import sys
 import os
 import tempfile
-from pathlib import Path
 
 # Add the project root to Python path
 sys.path.insert(0, os.path.abspath('.'))
 
-from rdflib import Graph, RDF, RDFS, OWL, SKOS, URIRef, Literal
-from rdflib.namespace import DCTERMS
+from rdflib import Graph
 from core.generator import OntologyGenerator
 from core.parser import OntologyParser
 

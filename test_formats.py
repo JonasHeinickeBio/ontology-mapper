@@ -6,7 +6,6 @@ Test script for multiple output format support
 import sys
 import os
 import tempfile
-from pathlib import Path
 
 # Add the project root to Python path
 sys.path.insert(0, os.path.abspath('.'))
@@ -14,7 +13,6 @@ sys.path.insert(0, os.path.abspath('.'))
 from rdflib import Graph, RDF, RDFS, OWL, SKOS, URIRef, Literal
 from rdflib.namespace import DCTERMS
 from core.generator import OntologyGenerator
-from core.parser import OntologyParser
 
 
 def create_test_graph():

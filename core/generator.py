@@ -6,7 +6,7 @@ import os
 import json
 import csv
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 
 from rdflib import Graph, RDF, RDFS, OWL, SKOS, URIRef, Literal
 from rdflib.namespace import DCTERMS

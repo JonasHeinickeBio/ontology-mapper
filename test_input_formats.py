@@ -6,7 +6,6 @@ Test script for multiple input format support
 import sys
 import os
 import tempfile
-from pathlib import Path
 
 # Add the project root to Python path
 sys.path.insert(0, os.path.abspath('.'))
@@ -115,7 +114,7 @@ def test_format_validation():
                 temp_file = f.name
             
             try:
-                parser = OntologyParser(temp_file, fmt)
+                OntologyParser(temp_file, fmt)
                 print(f"    ✓ Valid format accepted: {fmt}")
             finally:
                 if os.path.exists(temp_file):
@@ -130,7 +129,7 @@ def test_format_validation():
             temp_file = f.name
         
         try:
-            parser = OntologyParser(temp_file, 'invalid_format')
+            OntologyParser(temp_file, 'invalid_format')
             print(f"    ✗ Should have raised ValueError for invalid format")
             return False
         except ValueError:

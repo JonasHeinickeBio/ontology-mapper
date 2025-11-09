@@ -14,6 +14,14 @@ from config import ONTOLOGY_CONFIGS, ONTOLOGY_COMBINATIONS
 from cache import CacheManager, CacheConfig
 
 
+class SchemaGraphWrapper:
+    """Wrapper for schema parser graph to maintain compatibility with OntologyParser interface"""
+    
+    def __init__(self, graph, ttl_file):
+        self.graph = graph
+        self.ttl_file = ttl_file
+
+
 class CLIInterface:
     """Command-line interface for the tool"""
     
@@ -316,7 +324,7 @@ Examples:
                 if schema_mode:
                     # For schema mode, convert to RDF graph first
                     print("\n📊 Converting schema to RDF graph...")
-                    schema_graph_wrapper = type('obj', (object,), {'graph': schema_parser.to_rdf_graph(), 'ttl_file': args.ttl_file})()
+                    schema_graph_wrapper = SchemaGraphWrapper(schema_parser.to_rdf_graph(), args.ttl_file)
                     generator.generate_improved_ontology(schema_graph_wrapper, selections, args.output, args.report, args.format)
                 else:
                     generator.generate_improved_ontology(ontology, selections, args.output, args.report, args.format)

@@ -5,7 +5,7 @@ Schema parser for YAML, JSON, and Markdown formats with ontology mappings.
 import os
 import json
 import re
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from rdflib import Graph, RDF, RDFS, OWL, SKOS, URIRef, Literal
 from rdflib.namespace import DCTERMS
 
@@ -153,7 +153,7 @@ class SchemaParser:
                     'examples': []
                 }
                 current_section = None
-            elif line.strip().startswith('- ') and current_class is None:
+            elif line.strip().startswith('- '):
                 # Top-level class definition
                 if current_class:
                     self.classes.append(current_class)
