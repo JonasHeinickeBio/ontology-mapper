@@ -7,8 +7,13 @@ import os
 import json
 import time
 import hashlib
+import logging
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+
+from utils.error_handling import CacheError
+
+logger = logging.getLogger(__name__)
 
 
 class CacheManager:
@@ -35,8 +40,12 @@ class CacheManager:
             try:
                 Path(self.config.cache_dir).mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                print(f"⚠️  Warning: Could not create cache directory: {e}")
+                error_msg = f"Could not create cache directory: {e}"
+                logger.warning(error_msg)
+                print(f"⚠️  Warning: {error_msg}")
+                print("    Continuing with memory-only cache...")
                 self.config.persistent = False
+                self.stats['errors'] += 1
     
     def _generate_key(self, query: str, ontologies: str, service: str) -> str:
         """Generate a cache key from query parameters
@@ -103,7 +112,7 @@ class CacheManager:
                 # Remove expired entry
                 del self.memory_cache[key]
         
-        # Try persistent cache
+        # Try persistent cache with error recovery
         if self.config.persistent:
             try:
                 cache_file = self._get_cache_file_path(key)
@@ -118,10 +127,25 @@ class CacheManager:
                         return entry['data']
                     else:
                         # Remove expired file
+                        try:
+                            os.remove(cache_file)
+                        except OSError as rm_error:
+                            logger.warning(f"Could not remove expired cache file: {rm_error}")
+            except json.JSONDecodeError as e:
+                self.stats['errors'] += 1
+                logger.error(f"Corrupted cache file for key {key}: {e}")
+                # Try to remove corrupted file
+                try:
+                    cache_file = self._get_cache_file_path(key)
+                    if os.path.exists(cache_file):
                         os.remove(cache_file)
+                        logger.info(f"Removed corrupted cache file: {cache_file}")
+                except Exception as rm_error:
+                    logger.warning(f"Could not remove corrupted cache file: {rm_error}")
             except Exception as e:
                 self.stats['errors'] += 1
-                # Silently fail and treat as cache miss
+                logger.warning(f"Error reading from persistent cache: {e}")
+                # Continue with cache miss
         
         self.stats['misses'] += 1
         return None
@@ -153,18 +177,32 @@ class CacheManager:
         # Store in memory cache
         self.memory_cache[key] = entry
         
-        # Store in persistent cache
+        # Store in persistent cache with error handling
         if self.config.persistent:
             try:
                 cache_file = self._get_cache_file_path(key)
-                with open(cache_file, 'w') as f:
+                # Write to temporary file first for atomic operation
+                temp_file = f"{cache_file}.tmp"
+                with open(temp_file, 'w') as f:
                     json.dump(entry, f)
+                # Atomic rename
+                os.replace(temp_file, cache_file)
                 
                 # Check cache size and cleanup if needed
                 self._cleanup_if_needed()
+            except IOError as e:
+                self.stats['errors'] += 1
+                logger.warning(f"Could not write to persistent cache: {e}")
+                # Clean up temp file if it exists
+                try:
+                    temp_file = f"{cache_file}.tmp"
+                    if os.path.exists(temp_file):
+                        os.remove(temp_file)
+                except Exception:
+                    pass
             except Exception as e:
                 self.stats['errors'] += 1
-                # Continue even if persistent cache fails
+                logger.warning(f"Unexpected error writing to cache: {e}")
         
         self.stats['sets'] += 1
         return True

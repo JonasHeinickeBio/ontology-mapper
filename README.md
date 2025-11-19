@@ -10,6 +10,7 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 
 - **Multi-ontology support**: 24+ ontologies including MONDO, HP, NCIT, DOID, CHEBI, GO, SNOMEDCT, and more
 - **Dual API integration**: BioPortal and OLS APIs with intelligent fallback
+- **Advanced error handling**: Retry mechanisms, circuit breakers, and graceful degradation
 - **Multiple input formats**: Read Turtle, JSON-LD, RDF/XML, N-Triples, N3, TriG, N-Quads with auto-detection
 - **Multiple output formats**: Export to Turtle, JSON-LD, RDF/XML, N-Triples, CSV, TSV, SSSOM, and more
 - **Format conversion**: Convert between any supported RDF format
@@ -19,6 +20,7 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 - **Batch processing**: Handle multiple concepts efficiently
 - **GUI interface**: User-friendly graphical interface for non-technical users with format selection
 - **Result comparison**: Compare results from different ontology services
+- **Comprehensive logging**: Detailed logging for debugging and monitoring
 
 ## Installation
 
@@ -58,6 +60,12 @@ pip install -e .
    - `CACHE_PERSISTENT`: Enable persistent file-based cache (default: true)
    - `CACHE_DIR`: Cache directory location (default: ~/.ontology_mapper_cache)
    - `CACHE_MAX_SIZE_MB`: Maximum cache size in MB (default: 100)
+
+4. (Optional) Configure error handling and retry behavior in `.env`:
+   - `ERROR_RETRY_ENABLED`: Enable automatic retry (default: true)
+   - `ERROR_MAX_RETRIES`: Maximum retry attempts (default: 3)
+   - `ERROR_CIRCUIT_BREAKER_ENABLED`: Enable circuit breaker (default: true)
+   - See [ERROR_HANDLING.md](ERROR_HANDLING.md) for complete configuration options
 
 ## Usage
 
