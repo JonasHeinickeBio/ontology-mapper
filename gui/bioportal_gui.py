@@ -543,6 +543,14 @@ class BioPortalGUI:
         self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate')
         self.progress_bar.pack(fill=tk.X, padx=5, pady=5)
         
+        # Add detailed progress label
+        self.detailed_progress = ttk.Label(progress_frame, text="", foreground="gray")
+        self.detailed_progress.pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Add indeterminate progress for network operations
+        self.network_progress = ttk.Progressbar(progress_frame, mode='indeterminate', length=200)
+        self.network_progress_label = ttk.Label(progress_frame, text="")
+        
         # Log frame
         log_frame = ttk.LabelFrame(parent, text="Processing Log")
         log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -577,6 +585,13 @@ class BioPortalGUI:
         
         self.summary_text = scrolledtext.ScrolledText(summary_frame, wrap=tk.WORD, height=8)
         self.summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Statistics visualization frame
+        stats_frame = ttk.LabelFrame(parent, text="📊 Mapping Statistics")
+        stats_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.stats_canvas = tk.Canvas(stats_frame, height=150, bg='white')
+        self.stats_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Files frame
         files_frame = ttk.LabelFrame(parent, text="Generated Files")
@@ -713,9 +728,12 @@ class BioPortalGUI:
             }
             
             self.update_status("Searching for alignments...")
+            self.show_network_progress(True, "🌐 Querying BioPortal and OLS APIs...")
             
             # Perform lookup
             options, comparison = lookup.lookup_concept(concept, self.max_results.get())
+            
+            self.show_network_progress(False)
             
             if not options:
                 self.log(f"❌ No results found for '{self.single_word_query.get()}'")
@@ -819,10 +837,13 @@ class BioPortalGUI:
                 ))
                 
                 self.log(f"\n🔍 Step {i+1}/{len(concepts)}: {concept['label']} ({concept['type']})")
+                self.show_network_progress(True, f"🌐 Querying APIs for '{concept['label']}'...")
                 
                 # Perform lookup
                 options, comparison = lookup.lookup_concept(concept)
                 self.all_comparisons[concept['key']] = comparison
+                
+                self.show_network_progress(False)
                 
                 if not options:
                     self.log(f"❌ No results found for '{concept['label']}'")
@@ -1120,6 +1141,9 @@ Processing completed at: {report['timestamp']}
             if os.path.exists(comp_report_path):
                 size = f"{os.path.getsize(comp_report_path):,} bytes"
                 self.files_tree.insert("", tk.END, values=(comp_report_path, size, "Service comparison analysis"))
+            
+            # Draw statistics visualization
+            self.draw_statistics(report)
         
         self.root.after(0, update_ui)
     
@@ -1141,6 +1165,67 @@ Processing completed at: {report['timestamp']}
         """Clear the processing log"""
         self.log_text.delete(1.0, tk.END)
     
+    def draw_statistics(self, report):
+        """Draw simple bar chart statistics on canvas"""
+        canvas = self.stats_canvas
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width() if canvas.winfo_width() > 1 else 800
+        height = canvas.winfo_height() if canvas.winfo_height() > 1 else 150
+        
+        # Calculate statistics by ontology
+        ontology_counts = {}
+        for concept_key, alignments in report.get('selections', {}).items():
+            for alignment in alignments:
+                ont = alignment.get('ontology', 'Unknown')
+                ontology_counts[ont] = ontology_counts.get(ont, 0) + 1
+        
+        if not ontology_counts:
+            canvas.create_text(width//2, height//2, text="No data to display", 
+                             font=("Arial", 12), fill="gray")
+            return
+        
+        # Sort by count
+        sorted_onts = sorted(ontology_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Draw bar chart
+        max_count = max(count for _, count in sorted_onts) if sorted_onts else 1
+        bar_width = (width - 200) // len(sorted_onts) if sorted_onts else 50
+        bar_spacing = 10
+        
+        x_offset = 100
+        y_offset = 20
+        chart_height = height - 40
+        
+        colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', 
+                 '#00BCD4', '#FFEB3B', '#795548', '#607D8B', '#E91E63']
+        
+        for i, (ont, count) in enumerate(sorted_onts):
+            # Calculate bar dimensions
+            bar_height = (count / max_count) * (chart_height - 20)
+            x1 = x_offset + i * (bar_width + bar_spacing)
+            y1 = y_offset + chart_height - bar_height
+            x2 = x1 + bar_width - bar_spacing
+            y2 = y_offset + chart_height
+            
+            # Draw bar
+            color = colors[i % len(colors)]
+            canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="black")
+            
+            # Draw count on top of bar
+            canvas.create_text((x1 + x2) // 2, y1 - 10, text=str(count), 
+                             font=("Arial", 10, "bold"))
+            
+            # Draw ontology label (rotated if needed)
+            label = ont[:8] if len(ont) > 8 else ont
+            canvas.create_text((x1 + x2) // 2, y2 + 15, text=label, 
+                             font=("Arial", 9), angle=0)
+        
+        # Draw title
+        canvas.create_text(width // 2, 10, text="Mappings by Ontology", 
+                         font=("Arial", 12, "bold"))
+    
     def save_log(self):
         """Save log to file"""
         filename = filedialog.asksaveasfilename(
@@ -1156,6 +1241,21 @@ Processing completed at: {report['timestamp']}
     def update_status(self, message):
         """Update status bar"""
         self.root.after(0, lambda: self.status_bar.config(text=message))
+    
+    def show_network_progress(self, show=True, message=""):
+        """Show/hide network activity indicator"""
+        def update():
+            if show:
+                self.network_progress.pack(anchor=tk.W, padx=5, pady=2)
+                self.network_progress.start(10)
+                self.network_progress_label.config(text=message)
+                self.network_progress_label.pack(anchor=tk.W, padx=5, pady=2)
+            else:
+                self.network_progress.stop()
+                self.network_progress.pack_forget()
+                self.network_progress_label.pack_forget()
+        
+        self.root.after(0, update)
     
     def open_output_folder(self):
         """Open the output folder in file manager"""
