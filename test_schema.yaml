@@ -1,0 +1,24 @@
+metadata:
+  name: Test Schema
+  version: '1.0'
+
+classes:
+  Person:
+    definition: A human being
+    properties:
+      - person_id
+      - name
+    ontology_mappings:
+      - curie: NCIT:C25190
+        iri: http://purl.obolibrary.org/obo/NCIT_C25190
+        prefix: NCIT
+  
+  Patient:
+    definition: An individual receiving healthcare
+    properties:
+      - patient_id
+      - name
+    ontology_mappings:
+      - curie: NCIT:C16960
+        iri: http://purl.obolibrary.org/obo/NCIT_C16960
+        prefix: NCIT

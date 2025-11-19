@@ -10,11 +10,14 @@ This tool provides a simple, user-friendly interface for ontology concept lookup
 
 - **Multi-ontology support**: 24+ ontologies including MONDO, HP, NCIT, DOID, CHEBI, GO, SNOMEDCT, and more
 - **Dual API integration**: BioPortal and OLS APIs with intelligent fallback
+- **Multiple input formats**: Read Turtle, JSON-LD, RDF/XML, N-Triples, N3, TriG, N-Quads with auto-detection
+- **Multiple output formats**: Export to Turtle, JSON-LD, RDF/XML, N-Triples, CSV, TSV, SSSOM, and more
+- **Format conversion**: Convert between any supported RDF format
 - **Intelligent caching**: In-memory and persistent caching for faster repeated queries
 - **Interactive search**: Real-time concept lookup with user-friendly selection
-- **TTL file processing**: Parse and enrich existing ontology files
+- **Flexible file processing**: Parse and enrich ontology files in any supported format
 - **Batch processing**: Handle multiple concepts efficiently
-- **GUI interface**: User-friendly graphical interface for non-technical users
+- **GUI interface**: User-friendly graphical interface for non-technical users with format selection
 - **Result comparison**: Compare results from different ontology services
 
 ## Installation
@@ -65,10 +68,78 @@ pip install -e .
 python main.py --single-word "breast cancer"
 ```
 
-#### Process a TTL file:
+#### Process ontology files:
 ```bash
-python main.py --input ontology.ttl --output enriched_ontology.ttl
+# Process a Turtle file
+python main.py ontology.ttl --output enriched_ontology.ttl
+
+# Process a JSON-LD file
+python main.py ontology.jsonld --output enriched_ontology.jsonld
+
+# Process an RDF/XML file with explicit format
+python main.py ontology.rdf --input-format xml --output enriched_ontology.ttl
 ```
+
+#### Input Format Support:
+```bash
+# List available input formats
+python main.py --list-input-formats
+
+# Parse JSON-LD input
+python main.py data.jsonld --input-format json-ld
+
+# Parse RDF/XML input
+python main.py data.rdf --input-format xml
+
+# Auto-detect input format from extension
+python main.py ontology.jsonld  # Automatically detects JSON-LD
+python main.py ontology.rdf     # Automatically detects RDF/XML
+```
+
+#### Supported Input Formats:
+- **turtle/ttl** (default): Turtle - Human-readable RDF format
+- **json-ld**: JSON-LD - JSON format for linked data
+- **xml/rdf-xml/rdf**: RDF/XML - Traditional RDF XML format
+- **nt/ntriples**: N-Triples - Simple line-based RDF format
+- **n3**: Notation3 - Superset of Turtle with rules
+- **trig**: TriG - Turtle with named graphs
+- **nquads**: N-Quads - N-Triples with named graphs
+
+#### Output Format Selection:
+```bash
+# List available output formats (both input and output)
+python main.py --list-formats
+
+# Export as JSON-LD
+python main.py ontology.ttl --output result.jsonld --format json-ld
+
+# Export as RDF/XML
+python main.py --single-word "diabetes" --output result.rdf --format xml
+
+# Export as N-Triples
+python main.py ontology.ttl --output result.nt --format nt
+
+# Export as SSSOM mapping
+python main.py ontology.ttl --output mappings.sssom.tsv --format sssom
+
+# Auto-detect format from file extension
+python main.py --single-word "cancer" --output result.jsonld
+
+# Convert between formats
+python main.py ontology.jsonld --input-format json-ld --output ontology.ttl --format turtle
+```
+
+#### Supported Output Formats:
+- **turtle/ttl** (default): Turtle - Human-readable RDF format
+- **json-ld**: JSON-LD - JSON format for linked data
+- **xml/rdf-xml**: RDF/XML - Traditional RDF XML format
+- **nt/ntriples**: N-Triples - Simple line-based RDF format
+- **n3**: Notation3 - Superset of Turtle with rules
+- **trig**: TriG - Turtle with named graphs
+- **nquads**: N-Quads - N-Triples with named graphs
+- **csv**: CSV - Comma-separated values (tabular export)
+- **tsv**: TSV - Tab-separated values (tabular export)
+- **sssom**: SSSOM TSV - Simple Standard for Sharing Ontology Mappings
 
 #### Cache Management:
 ```bash
@@ -238,6 +309,49 @@ Client for interacting with the OLS (Ontology Lookup Service) API.
 
 #### `OntologyParser`
 Parser for TTL (Turtle) ontology files.
+
+#### `OntologyGenerator`
+Generator for creating ontologies with alignments. Supports multiple output formats:
+- RDF formats via rdflib (Turtle, JSON-LD, RDF/XML, N-Triples, etc.)
+- Custom formats (CSV, TSV, SSSOM)
+
+## Output Format Examples
+
+### Turtle (Default)
+```bash
+python main.py --single-word "diabetes" --output result.ttl
+```
+Produces human-readable RDF in Turtle format with prefixes and namespaces.
+
+### JSON-LD (Web-Friendly)
+```bash
+python main.py --single-word "diabetes" --output result.jsonld --format json-ld
+```
+Produces JSON format suitable for web APIs and JavaScript applications.
+
+### RDF/XML (Traditional)
+```bash
+python main.py --single-word "diabetes" --output result.rdf --format xml
+```
+Produces traditional RDF/XML format compatible with older tools.
+
+### N-Triples (Simple)
+```bash
+python main.py --single-word "diabetes" --output result.nt --format nt
+```
+Produces simple line-based format, one triple per line.
+
+### CSV/TSV (Tabular)
+```bash
+python main.py --single-word "diabetes" --output result.csv --format csv
+```
+Produces tabular format with columns: Subject, Predicate, Object, Object Type.
+
+### SSSOM (Mapping Standard)
+```bash
+python main.py --single-word "diabetes" --output mappings.sssom.tsv --format sssom
+```
+Produces SSSOM (Simple Standard for Sharing Ontology Mappings) format for interoperability with mapping tools.
 
 ## Configuration
 
