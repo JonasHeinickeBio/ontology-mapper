@@ -224,6 +224,42 @@ Or use the demo interface:
 python gui/demo_gui.py
 ```
 
+#### Advanced GUI Features
+
+The GUI now includes powerful features for enhanced usability and productivity:
+
+**🔍 Advanced Search & Filtering**
+- Confidence score slider (0.0-1.0) to filter results
+- Search in synonyms and descriptions
+- Interactive ontology selection with multi-select
+- Adjustable result count (1-20)
+
+**📊 Result Visualization**
+- Bar chart showing mapping distribution by ontology
+- Color-coded source indicators (BioPortal 🌐 / OLS 🔬)
+- Real-time statistics
+
+**⚠️ Mapping Validation**
+- Automatic duplicate detection
+- Excessive mapping warnings
+- Low confidence alerts
+- Quality assurance before export
+
+**🎨 Enhanced UX**
+- Dark mode (Ctrl+D) for comfortable long sessions
+- Keyboard shortcuts: Ctrl+S (start), Ctrl+O (open), F1 (help), Esc (stop)
+- Search history (last 10 queries)
+- Tooltips on all buttons
+- Drag & drop file support
+- Network activity indicators
+
+**📈 Progress Tracking**
+- Determinate progress bar for overall processing
+- Indeterminate indicator for network operations
+- Detailed status messages
+
+For detailed documentation of all GUI features, see [GUI_FEATURES.md](GUI_FEATURES.md).
+
 ## Supported Ontologies
 
 The tool supports lookup across 24+ major biomedical ontologies:
