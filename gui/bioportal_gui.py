@@ -38,6 +38,37 @@ except ImportError as e:
     sys.exit(1)
 
 
+class ToolTip:
+    """Tooltip class for showing helpful hints on hover"""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.widget.bind("<Enter>", self.show_tip)
+        self.widget.bind("<Leave>", self.hide_tip)
+    
+    def show_tip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        x, y, _, _ = self.widget.bbox("insert") if hasattr(self.widget, 'bbox') else (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                        background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                        font=("Arial", 9))
+        label.pack()
+    
+    def hide_tip(self, event=None):
+        if self.tipwindow:
+            self.tipwindow.destroy()
+            self.tipwindow = None
+
+
 class ConceptAlignmentWindow:
     """Window for selecting alignments for a specific concept"""
     
@@ -306,7 +337,17 @@ class BioPortalGUI:
         self.waiting_for_selection = False
         self.current_selection_result = None
         
+        # Advanced features state
+        self.dark_mode = tk.BooleanVar(value=False)
+        self.min_confidence = tk.DoubleVar(value=0.0)
+        self.search_synonyms = tk.BooleanVar(value=True)
+        self.search_descriptions = tk.BooleanVar(value=False)
+        self.search_history = []
+        self.max_history = 10
+        
         self.setup_ui()
+        self.setup_keyboard_shortcuts()
+        self.setup_drag_drop()
         
     def setup_ui(self):
         """Setup the main GUI"""
@@ -378,8 +419,8 @@ class BioPortalGUI:
         ttk.Label(ontology_frame, text="Leave empty for automatic selection, or specify like: HP,NCIT,MONDO", 
                  font=("Arial", 8), foreground="gray").pack(anchor=tk.W, padx=5)
         
-        # Search options
-        search_frame = ttk.LabelFrame(parent, text="Search Options")
+        # Search options with advanced filters
+        search_frame = ttk.LabelFrame(parent, text="Search Options & Filters")
         search_frame.pack(fill=tk.X, padx=10, pady=5)
         
         max_results_frame = ttk.Frame(search_frame)
@@ -387,6 +428,26 @@ class BioPortalGUI:
         
         ttk.Label(max_results_frame, text="Max Results per Search:").pack(side=tk.LEFT, padx=(0, 5))
         ttk.Spinbox(max_results_frame, from_=1, to=20, textvariable=self.max_results, width=5).pack(side=tk.LEFT)
+        
+        # Advanced filters
+        filters_frame = ttk.Frame(search_frame)
+        filters_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Confidence filter
+        conf_frame = ttk.Frame(filters_frame)
+        conf_frame.pack(fill=tk.X, pady=2)
+        ttk.Label(conf_frame, text="Min Confidence Score:").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Scale(conf_frame, from_=0.0, to=1.0, variable=self.min_confidence, 
+                 orient=tk.HORIZONTAL, length=200).pack(side=tk.LEFT, padx=(0, 5))
+        self.conf_label = ttk.Label(conf_frame, text="0.0")
+        self.conf_label.pack(side=tk.LEFT)
+        self.min_confidence.trace_add('write', self.update_confidence_label)
+        
+        # Search scope checkboxes
+        ttk.Checkbutton(filters_frame, text="Search in Synonyms", 
+                       variable=self.search_synonyms).pack(anchor=tk.W, pady=2)
+        ttk.Checkbutton(filters_frame, text="Search in Descriptions", 
+                       variable=self.search_descriptions).pack(anchor=tk.W, pady=2)
         
         # API Configuration
         api_frame = ttk.LabelFrame(parent, text="API Configuration")
@@ -428,16 +489,44 @@ class BioPortalGUI:
         ttk.Label(output_frame, text="Alignment Report File:").pack(anchor=tk.W, padx=5, pady=2)
         ttk.Entry(output_frame, textvariable=self.report_file, width=60).pack(anchor=tk.W, padx=5, pady=2)
         
+        # Advanced Features
+        advanced_frame = ttk.LabelFrame(parent, text="Advanced Features")
+        advanced_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        # Theme toggle
+        theme_frame = ttk.Frame(advanced_frame)
+        theme_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Checkbutton(theme_frame, text="🌙 Dark Mode", variable=self.dark_mode, 
+                       command=self.toggle_dark_mode).pack(side=tk.LEFT, padx=5)
+        
+        # Search history
+        history_frame = ttk.Frame(advanced_frame)
+        history_frame.pack(fill=tk.X, padx=5, pady=2)
+        ttk.Label(history_frame, text="Recent Searches:").pack(side=tk.LEFT, padx=(0, 5))
+        self.history_combo = ttk.Combobox(history_frame, values=[], state='readonly', width=40)
+        self.history_combo.pack(side=tk.LEFT, padx=(0, 5))
+        self.history_combo.bind('<<ComboboxSelected>>', self.load_from_history)
+        ttk.Button(history_frame, text="Clear History", command=self.clear_history).pack(side=tk.LEFT, padx=5)
+        
         # Action buttons
         action_frame = ttk.Frame(parent)
         action_frame.pack(fill=tk.X, padx=10, pady=20)
         
-        self.start_button = ttk.Button(action_frame, text="Start Processing", command=self.start_processing)
+        self.start_button = ttk.Button(action_frame, text="▶ Start Processing", command=self.start_processing)
         self.start_button.pack(side=tk.LEFT, padx=5)
+        ToolTip(self.start_button, "Start processing ontology or single word query (Ctrl+S)")
         
-        ttk.Button(action_frame, text="Load Example", command=self.load_example).pack(side=tk.LEFT, padx=5)
-        ttk.Button(action_frame, text="List Ontologies", command=self.show_ontologies).pack(side=tk.LEFT, padx=5)
-        ttk.Button(action_frame, text="Help", command=self.show_help).pack(side=tk.RIGHT, padx=5)
+        load_btn = ttk.Button(action_frame, text="📁 Load Example", command=self.load_example)
+        load_btn.pack(side=tk.LEFT, padx=5)
+        ToolTip(load_btn, "Load an example ontology file for testing")
+        
+        list_btn = ttk.Button(action_frame, text="📋 List Ontologies", command=self.show_ontologies)
+        list_btn.pack(side=tk.LEFT, padx=5)
+        ToolTip(list_btn, "Show list of available ontologies")
+        
+        help_btn = ttk.Button(action_frame, text="❓ Help", command=self.show_help)
+        help_btn.pack(side=tk.RIGHT, padx=5)
+        ToolTip(help_btn, "Show help and keyboard shortcuts (F1)")
         
         # Initialize mode
         self.on_mode_change()
@@ -453,6 +542,14 @@ class BioPortalGUI:
         
         self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate')
         self.progress_bar.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Add detailed progress label
+        self.detailed_progress = ttk.Label(progress_frame, text="", foreground="gray")
+        self.detailed_progress.pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Add indeterminate progress for network operations
+        self.network_progress = ttk.Progressbar(progress_frame, mode='indeterminate', length=200)
+        self.network_progress_label = ttk.Label(progress_frame, text="")
         
         # Log frame
         log_frame = ttk.LabelFrame(parent, text="Processing Log")
@@ -473,12 +570,28 @@ class BioPortalGUI:
         
     def setup_results_tab(self, parent):
         """Setup results tab"""
+        # Validation frame
+        validation_frame = ttk.LabelFrame(parent, text="⚠️ Validation & Quality Checks")
+        validation_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.validation_text = scrolledtext.ScrolledText(validation_frame, wrap=tk.WORD, height=4)
+        self.validation_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.validation_text.insert(tk.END, "No validation issues detected.\n")
+        self.validation_text.config(state=tk.DISABLED)
+        
         # Summary frame
         summary_frame = ttk.LabelFrame(parent, text="Processing Summary")
         summary_frame.pack(fill=tk.X, padx=10, pady=5)
         
         self.summary_text = scrolledtext.ScrolledText(summary_frame, wrap=tk.WORD, height=8)
         self.summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Statistics visualization frame
+        stats_frame = ttk.LabelFrame(parent, text="📊 Mapping Statistics")
+        stats_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.stats_canvas = tk.Canvas(stats_frame, height=150, bg='white')
+        self.stats_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Files frame
         files_frame = ttk.LabelFrame(parent, text="Generated Files")
@@ -615,9 +728,12 @@ class BioPortalGUI:
             }
             
             self.update_status("Searching for alignments...")
+            self.show_network_progress(True, "🌐 Querying BioPortal and OLS APIs...")
             
             # Perform lookup
             options, comparison = lookup.lookup_concept(concept, self.max_results.get())
+            
+            self.show_network_progress(False)
             
             if not options:
                 self.log(f"❌ No results found for '{self.single_word_query.get()}'")
@@ -721,10 +837,13 @@ class BioPortalGUI:
                 ))
                 
                 self.log(f"\n🔍 Step {i+1}/{len(concepts)}: {concept['label']} ({concept['type']})")
+                self.show_network_progress(True, f"🌐 Querying APIs for '{concept['label']}'...")
                 
                 # Perform lookup
                 options, comparison = lookup.lookup_concept(concept)
                 self.all_comparisons[concept['key']] = comparison
+                
+                self.show_network_progress(False)
                 
                 if not options:
                     self.log(f"❌ No results found for '{concept['label']}'")
@@ -792,6 +911,9 @@ class BioPortalGUI:
         """Generate the improved ontology with alignments"""
         self.log("\n💾 Generating Improved Ontology")
         self.log("=" * 35)
+        
+        # Validate mappings first
+        self.validate_mappings(self.current_selections)
         
         try:
             # Import rdflib components
@@ -927,6 +1049,58 @@ class BioPortalGUI:
         except Exception as e:
             self.log(f"❌ Error generating improved ontology: {str(e)}")
     
+    def validate_mappings(self, selections):
+        """Validate mappings and detect potential issues"""
+        issues = []
+        
+        # Check for duplicate mappings
+        uri_counts = {}
+        for concept_key, alignments in selections.items():
+            for alignment in alignments:
+                uri = alignment['uri']
+                if uri in uri_counts:
+                    uri_counts[uri].append(concept_key)
+                else:
+                    uri_counts[uri] = [concept_key]
+        
+        duplicates = {uri: concepts for uri, concepts in uri_counts.items() if len(concepts) > 1}
+        if duplicates:
+            issues.append("⚠️ DUPLICATE MAPPINGS:")
+            for uri, concepts in duplicates.items():
+                issues.append(f"  • {uri[:60]}... mapped by: {', '.join(concepts)}")
+        
+        # Check for concepts with many mappings
+        multi_mapped = {k: v for k, v in selections.items() if len(v) > 5}
+        if multi_mapped:
+            issues.append("\n⚠️ CONCEPTS WITH MANY MAPPINGS:")
+            for concept, alignments in multi_mapped.items():
+                issues.append(f"  • {concept}: {len(alignments)} mappings (may need review)")
+        
+        # Check for low confidence if available
+        low_conf = []
+        for concept_key, alignments in selections.items():
+            for alignment in alignments:
+                if 'confidence' in alignment and alignment['confidence'] < 0.5:
+                    low_conf.append(f"  • {concept_key} → {alignment['label']} (confidence: {alignment['confidence']:.2f})")
+        
+        if low_conf:
+            issues.append("\n⚠️ LOW CONFIDENCE MAPPINGS:")
+            issues.extend(low_conf)
+        
+        # Update validation panel
+        self.validation_text.config(state=tk.NORMAL)
+        self.validation_text.delete(1.0, tk.END)
+        
+        if issues:
+            self.validation_text.insert(tk.END, "\n".join(issues))
+            self.log(f"\n⚠️ Validation detected {len(issues)} potential issues")
+        else:
+            self.validation_text.insert(tk.END, "✅ No validation issues detected.\n")
+            self.log("✅ Validation passed - no issues detected")
+        
+        self.validation_text.config(state=tk.DISABLED)
+        return len(issues) == 0
+    
     def update_results(self, report, output_path, report_path):
         """Update the results tab with processing results"""
         def update_ui():
@@ -967,6 +1141,9 @@ Processing completed at: {report['timestamp']}
             if os.path.exists(comp_report_path):
                 size = f"{os.path.getsize(comp_report_path):,} bytes"
                 self.files_tree.insert("", tk.END, values=(comp_report_path, size, "Service comparison analysis"))
+            
+            # Draw statistics visualization
+            self.draw_statistics(report)
         
         self.root.after(0, update_ui)
     
@@ -988,6 +1165,67 @@ Processing completed at: {report['timestamp']}
         """Clear the processing log"""
         self.log_text.delete(1.0, tk.END)
     
+    def draw_statistics(self, report):
+        """Draw simple bar chart statistics on canvas"""
+        canvas = self.stats_canvas
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width() if canvas.winfo_width() > 1 else 800
+        height = canvas.winfo_height() if canvas.winfo_height() > 1 else 150
+        
+        # Calculate statistics by ontology
+        ontology_counts = {}
+        for concept_key, alignments in report.get('selections', {}).items():
+            for alignment in alignments:
+                ont = alignment.get('ontology', 'Unknown')
+                ontology_counts[ont] = ontology_counts.get(ont, 0) + 1
+        
+        if not ontology_counts:
+            canvas.create_text(width//2, height//2, text="No data to display", 
+                             font=("Arial", 12), fill="gray")
+            return
+        
+        # Sort by count
+        sorted_onts = sorted(ontology_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Draw bar chart
+        max_count = max(count for _, count in sorted_onts) if sorted_onts else 1
+        bar_width = (width - 200) // len(sorted_onts) if sorted_onts else 50
+        bar_spacing = 10
+        
+        x_offset = 100
+        y_offset = 20
+        chart_height = height - 40
+        
+        colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', 
+                 '#00BCD4', '#FFEB3B', '#795548', '#607D8B', '#E91E63']
+        
+        for i, (ont, count) in enumerate(sorted_onts):
+            # Calculate bar dimensions
+            bar_height = (count / max_count) * (chart_height - 20)
+            x1 = x_offset + i * (bar_width + bar_spacing)
+            y1 = y_offset + chart_height - bar_height
+            x2 = x1 + bar_width - bar_spacing
+            y2 = y_offset + chart_height
+            
+            # Draw bar
+            color = colors[i % len(colors)]
+            canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="black")
+            
+            # Draw count on top of bar
+            canvas.create_text((x1 + x2) // 2, y1 - 10, text=str(count), 
+                             font=("Arial", 10, "bold"))
+            
+            # Draw ontology label (rotated if needed)
+            label = ont[:8] if len(ont) > 8 else ont
+            canvas.create_text((x1 + x2) // 2, y2 + 15, text=label, 
+                             font=("Arial", 9), angle=0)
+        
+        # Draw title
+        canvas.create_text(width // 2, 10, text="Mappings by Ontology", 
+                         font=("Arial", 12, "bold"))
+    
     def save_log(self):
         """Save log to file"""
         filename = filedialog.asksaveasfilename(
@@ -1003,6 +1241,21 @@ Processing completed at: {report['timestamp']}
     def update_status(self, message):
         """Update status bar"""
         self.root.after(0, lambda: self.status_bar.config(text=message))
+    
+    def show_network_progress(self, show=True, message=""):
+        """Show/hide network activity indicator"""
+        def update():
+            if show:
+                self.network_progress.pack(anchor=tk.W, padx=5, pady=2)
+                self.network_progress.start(10)
+                self.network_progress_label.config(text=message)
+                self.network_progress_label.pack(anchor=tk.W, padx=5, pady=2)
+            else:
+                self.network_progress.stop()
+                self.network_progress.pack_forget()
+                self.network_progress_label.pack_forget()
+        
+        self.root.after(0, update)
     
     def open_output_folder(self):
         """Open the output folder in file manager"""
@@ -1071,6 +1324,231 @@ For more information, visit:
         text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         text_widget.insert(tk.END, help_text)
         text_widget.config(state=tk.DISABLED)
+    
+    def setup_keyboard_shortcuts(self):
+        """Setup keyboard shortcuts for improved accessibility"""
+        self.root.bind('<Control-s>', lambda e: self.start_processing())
+        self.root.bind('<Control-o>', lambda e: self.browse_ttl_file())
+        self.root.bind('<Control-h>', lambda e: self.show_help())
+        self.root.bind('<Control-d>', lambda e: self.toggle_dark_mode())
+        self.root.bind('<F1>', lambda e: self.show_help())
+        self.root.bind('<Escape>', lambda e: self.stop_processing() if self.is_processing else None)
+    
+    def setup_drag_drop(self):
+        """Setup drag and drop file handling (requires tkinterdnd2)"""
+        try:
+            self.root.drop_target_register('DND_Files')
+            self.root.dnd_bind('<<Drop>>', self.handle_drop)
+        except:
+            pass  # Silently skip if tkinterdnd2 not available
+    
+    def handle_drop(self, event):
+        """Handle dropped files"""
+        try:
+            files = self.root.tk.splitlist(event.data)
+            if files and files[0].endswith('.ttl'):
+                self.ttl_file.set(files[0])
+                self.log(f"📁 File loaded via drag & drop: {files[0]}")
+        except:
+            pass
+    
+    def update_confidence_label(self, *args):
+        """Update confidence score label"""
+        score = self.min_confidence.get()
+        self.conf_label.config(text=f"{score:.2f}")
+    
+    def toggle_dark_mode(self):
+        """Toggle between light and dark mode"""
+        if self.dark_mode.get():
+            style = ttk.Style()
+            style.theme_use('clam')
+            
+            bg_color = '#2b2b2b'
+            fg_color = '#ffffff'
+            select_bg = '#404040'
+            
+            self.root.configure(bg=bg_color)
+            style.configure('TFrame', background=bg_color)
+            style.configure('TLabel', background=bg_color, foreground=fg_color)
+            style.configure('TLabelframe', background=bg_color, foreground=fg_color)
+            style.configure('TLabelframe.Label', background=bg_color, foreground=fg_color)
+            style.configure('TButton', background=select_bg, foreground=fg_color)
+            style.configure('TCheckbutton', background=bg_color, foreground=fg_color)
+            style.configure('TRadiobutton', background=bg_color, foreground=fg_color)
+            
+            self.log_text.config(bg='#1e1e1e', fg=fg_color, insertbackground=fg_color)
+            self.summary_text.config(bg='#1e1e1e', fg=fg_color, insertbackground=fg_color)
+            
+            self.log("🌙 Dark mode enabled")
+        else:
+            style = ttk.Style()
+            style.theme_use('default')
+            
+            self.root.configure(bg='SystemButtonFace')
+            self.log_text.config(bg='white', fg='black', insertbackground='black')
+            self.summary_text.config(bg='white', fg='black', insertbackground='black')
+            
+            self.log("☀️ Light mode enabled")
+    
+    def add_to_history(self, query):
+        """Add a search to history"""
+        if query and query not in self.search_history:
+            self.search_history.insert(0, query)
+            if len(self.search_history) > self.max_history:
+                self.search_history.pop()
+            self.history_combo['values'] = self.search_history
+    
+    def load_from_history(self, event=None):
+        """Load a search from history"""
+        selection = self.history_combo.get()
+        if selection:
+            self.single_word_query.set(selection)
+            self.log(f"📜 Loaded from history: {selection}")
+    
+    def clear_history(self):
+        """Clear search history"""
+        self.search_history = []
+        self.history_combo['values'] = []
+        self.log("🗑️ Search history cleared")
+    
+    def browse_ontologies(self):
+        """Show ontology selection dialog"""
+        ontologies = [
+            "MONDO - Monarch Disease Ontology",
+            "HP - Human Phenotype Ontology",
+            "NCIT - National Cancer Institute Thesaurus",
+            "DOID - Disease Ontology",
+            "CHEBI - Chemical Entities of Biological Interest",
+            "GO - Gene Ontology",
+            "SNOMEDCT - SNOMED Clinical Terms",
+            "ICD10CM - ICD-10 Clinical Modification",
+            "ICD11 - ICD-11",
+            "LOINC - Logical Observation Identifiers",
+            "OMIM - Online Mendelian Inheritance in Man",
+            "ORDO - Orphanet Rare Disease Ontology",
+            "EFO - Experimental Factor Ontology",
+            "UBERON - Uber Anatomy Ontology"
+        ]
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Ontologies")
+        dialog.geometry("500x600")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text="Select ontologies to search:", 
+                 font=("Arial", 12, "bold")).pack(padx=10, pady=10)
+        
+        canvas = tk.Canvas(dialog)
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        selections = {}
+        for ont in ontologies:
+            code = ont.split(' - ')[0]
+            var = tk.BooleanVar()
+            selections[code] = var
+            ttk.Checkbutton(scrollable_frame, text=ont, variable=var).pack(anchor=tk.W, padx=5, pady=2)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y", pady=10)
+        
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        def apply_selection():
+            selected = [code for code, var in selections.items() if var.get()]
+            self.selected_ontologies.set(','.join(selected))
+            dialog.destroy()
+        
+        def select_all():
+            for var in selections.values():
+                var.set(True)
+        
+        def clear_all():
+            for var in selections.values():
+                var.set(False)
+        
+        ttk.Button(button_frame, text="Select All", command=select_all).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Clear All", command=clear_all).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="Apply", command=apply_selection).pack(side=tk.RIGHT, padx=5)
+    
+    def on_mode_change(self):
+        """Handle mode change between file and single word"""
+        if self.use_single_word.get():
+            self.file_frame.pack_forget()
+        else:
+            self.query_frame.pack_forget()
+    
+    def show_ontologies(self):
+        """Show list of available ontologies"""
+        ontology_info = """Available Ontologies
+
+Disease & Phenotype:
+• MONDO - Monarch Disease Ontology
+• HP - Human Phenotype Ontology  
+• DOID - Disease Ontology
+• ORDO - Orphanet Rare Disease Ontology
+• OMIM - Online Mendelian Inheritance in Man
+
+Clinical & Medical:
+• SNOMEDCT - SNOMED Clinical Terms
+• ICD10CM, ICD11 - International Classification of Diseases
+• LOINC - Logical Observation Identifiers
+• CPT - Current Procedural Terminology
+
+Biological:
+• GO - Gene Ontology
+• CHEBI - Chemical Entities of Biological Interest
+• PRO - Protein Ontology
+• UBERON - Uber Anatomy Ontology
+
+And many more...
+
+Use the "Browse Ontologies" button to select specific ontologies,
+or leave empty for automatic ontology selection.
+"""
+        
+        info_window = tk.Toplevel(self.root)
+        info_window.title("Available Ontologies")
+        info_window.geometry("600x500")
+        
+        text_widget = scrolledtext.ScrolledText(info_window, wrap=tk.WORD)
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        text_widget.insert(tk.END, ontology_info)
+        text_widget.config(state=tk.DISABLED)
+    
+    def show_concept_alignment_window(self, concept: Dict, options: List[Dict], comparison: Dict):
+        """Show concept alignment window for single word queries"""
+        alignment_window = ConceptAlignmentWindow(self.root, concept, options, comparison)
+        
+        def on_close():
+            self.current_selection_result = alignment_window.result
+            if alignment_window.result:
+                self.add_to_history(concept['label'])
+                self.log(f"\n✅ Selected {len(alignment_window.result)} alignment(s):")
+                for sel in alignment_window.result:
+                    self.log(f"   • {sel['label']} ({sel['ontology']}) - {sel['uri']}")
+        
+        alignment_window.window.protocol("WM_DELETE_WINDOW", on_close)
+        self.root.wait_window(alignment_window.window)
+        on_close()
+    
+    def processing_complete(self):
+        """Handle completion of processing"""
+        self.start_button.config(state=tk.NORMAL)
+        self.stop_button.config(state=tk.DISABLED)
+        self.is_processing = False
+        self.update_status("Processing complete")
     
     def run(self):
         """Start the GUI application"""
