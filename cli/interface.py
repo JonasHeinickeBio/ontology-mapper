@@ -434,6 +434,10 @@ Examples:
                 print(f"     Synonyms: {synonyms_str}")
             
             print()
+        
+        # Get user selection
+        while True:
+            try:
                 choice = input(f"Choose option(s) for '{args.single_word}' (1-{len(options)}, multiple with commas, 0 to skip): ").strip()
                 
                 if choice == '0':
