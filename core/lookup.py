@@ -4,18 +4,27 @@ Concept lookup orchestration across multiple services.
 
 from typing import List, Dict, Tuple, Optional
 
-from services import BioPortalLookup, OLSLookup, ResultComparator
+from services import BioPortalLookup, OLSLookup, ResultComparator, FuzzyMatcher
 from config import SEARCH_STRATEGIES
 
 
 class ConceptLookup:
     """Handles concept-specific lookups across multiple services"""
     
-    def __init__(self, bioportal: BioPortalLookup, ols: OLSLookup, default_ontologies: Optional[str] = None):
+    def __init__(
+        self,
+        bioportal: BioPortalLookup,
+        ols: OLSLookup,
+        default_ontologies: Optional[str] = None,
+        fuzzy_matcher: Optional[FuzzyMatcher] = None,
+    ):
         self.bioportal = bioportal
         self.ols = ols
         self.default_ontologies = default_ontologies
         self.search_strategies = SEARCH_STRATEGIES
+        # Use caller-supplied matcher or fall back to a sensible default that
+        # just ranks without filtering (threshold=0.0).
+        self.fuzzy_matcher: Optional[FuzzyMatcher] = fuzzy_matcher
     
     def lookup_concept(self, concept: Dict, max_results: int = 5) -> Tuple[List[Dict], Dict]:
         """Perform lookup across both BioPortal and OLS with comparison"""
@@ -62,6 +71,14 @@ class ConceptLookup:
         
         # Combine and deduplicate results
         combined_results = self._combine_results(all_bp_results, all_ols_results)
+
+        # Apply fuzzy matching when a matcher has been configured
+        if self.fuzzy_matcher is not None:
+            combined_results = self.fuzzy_matcher.score_results(
+                label,
+                combined_results,
+                apply_threshold=True,
+            )
         
         return combined_results[:max_results * 2], comparison  # Allow more options
     
@@ -85,3 +102,4 @@ class ConceptLookup:
                 seen_uris.add(result['uri'])
         
         return combined
+

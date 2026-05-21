@@ -8,7 +8,7 @@ import json
 import argparse
 from typing import Dict, List
 
-from services import BioPortalLookup, OLSLookup
+from services import BioPortalLookup, OLSLookup, FuzzyMatcher
 from core import OntologyParser, SchemaParser, ConceptLookup, OntologyGenerator
 from config import ONTOLOGY_CONFIGS, ONTOLOGY_COMBINATIONS
 from cache import CacheManager, CacheConfig
@@ -89,7 +89,16 @@ Examples:
                           help='Show cache statistics')
         parser.add_argument('--no-cache', action='store_true',
                           help='Disable cache for this run')
-        
+
+        # Fuzzy matching arguments
+        parser.add_argument('--fuzzy', action='store_true',
+                          help='Enable fuzzy matching to score and filter results by string similarity')
+        parser.add_argument('--similarity-threshold', type=float, default=0.7,
+                          help='Minimum similarity score (0.0-1.0) for fuzzy matching (default: 0.7)')
+        parser.add_argument('--fuzzy-algorithm', default='jaro_winkler',
+                          choices=['jaro_winkler', 'levenshtein', 'jaro'],
+                          help='Similarity algorithm for fuzzy matching (default: jaro_winkler)')
+
         return parser
     
     def _list_available_ontologies(self):
@@ -237,7 +246,20 @@ Examples:
         # Initialize components with shared cache
         bioportal = BioPortalLookup(args.api_key, cache)
         ols = OLSLookup(cache)
-        lookup = ConceptLookup(bioportal, ols, args.ontologies)
+
+        # Configure fuzzy matcher when requested
+        fuzzy_matcher = None
+        if args.fuzzy:
+            fuzzy_matcher = FuzzyMatcher(
+                algorithm=args.fuzzy_algorithm,
+                threshold=args.similarity_threshold,
+            )
+            print(
+                f"🔀 Fuzzy matching: enabled "
+                f"(algorithm={args.fuzzy_algorithm}, threshold={args.similarity_threshold})"
+            )
+
+        lookup = ConceptLookup(bioportal, ols, args.ontologies, fuzzy_matcher)
         generator = OntologyGenerator()
         
         # Show ontologies being used
@@ -390,7 +412,15 @@ Examples:
             print(f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}")
             print(f"     Ontology: {result['ontology']} | Source: {result['source']}")
             print(f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}")
-            
+
+            # Show similarity score when fuzzy matching was used
+            if 'similarity_score' in result:
+                score_pct = int(result['similarity_score'] * 100)
+                algo = result.get('similarity_algorithm', '')
+                matched_syn = result.get('matched_synonym', '')
+                score_detail = f" via synonym '{matched_syn}'" if matched_syn else ""
+                print(f"     Confidence: {score_pct}% ({algo}{score_detail})")
+
             # Show description if available
             if result.get('description') and result['description'].strip():
                 desc = result['description'][:120] + "..." if len(result['description']) > 120 else result['description']
@@ -515,7 +545,15 @@ Examples:
                 print(f"{j:2d}. {source_indicator} {result['label']}{ols_only_indicator}")
                 print(f"     Ontology: {result['ontology']} | Source: {result['source']}")
                 print(f"     URI: {result['uri'][:70]}{'...' if len(result['uri']) > 70 else ''}")
-                
+
+                # Show similarity score when fuzzy matching was used
+                if 'similarity_score' in result:
+                    score_pct = int(result['similarity_score'] * 100)
+                    algo = result.get('similarity_algorithm', '')
+                    matched_syn = result.get('matched_synonym', '')
+                    score_detail = f" via synonym '{matched_syn}'" if matched_syn else ""
+                    print(f"     Confidence: {score_pct}% ({algo}{score_detail})")
+
                 # Show description if available
                 if result.get('description') and result['description'].strip():
                     desc = result['description'][:120] + "..." if len(result['description']) > 120 else result['description']
